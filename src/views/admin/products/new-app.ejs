@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-white/50 dark:bg-slate-800/50 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 transition-colors">
+            
+            <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white">Add App Product</h1>
+            <a href="/admin/products" class="text-slate-400 hover:text-white transition-colors">Cancel</a>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="max-w-2xl bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-xl">
+                <form action="/admin/products" method="POST" class="space-y-6">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="type" value="app">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Product Name</label>
+                            <input type="text" name="name" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Category</label>
+                            <select name="category" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <% categories.filter(c => c.type === 'premium_app').forEach(cat => { %>
+                                <option value="<%= cat.id %>"><%= cat.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Application Type</label>
+                        <select name="appPlatform" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="Netflix">Netflix</option>
+                            <option value="Capcut">Capcut</option>
+                            <option value="Spotify">Spotify</option>
+                            <option value="Canva">Canva</option>
+                            <option value="YouTube">YouTube</option>
+                            <option value="Disney+">Disney+</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Price (Rp)</label>
+                        <input type="number" name="price" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                        <textarea name="description" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Product details..."></textarea>
+                    </div>
+
+                    <div>
+                        <%- include('../../partials/logo-picker') %>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Custom SVG / Icon Code (Optional)</label>
+                        <textarea name="iconSVG" rows="3" placeholder='<svg ...>...</svg>' class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono text-xs"></textarea>
+                        <p class="text-[10px] text-slate-400 mt-1">Paste your SVG code or Lucide icon HTML here. Leave empty for smart auto-detect.</p>
+                    </div>
+
+                    <div class="p-6 bg-slate-900/50 rounded-xl border border-slate-700 space-y-4">
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">Initial Account (Optional)</h3>
+                        <p class="text-xs text-slate-500">You can add more accounts later in the stock management page.</p>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">EMAIL / USERNAME</label>
+                            <input type="text" name="initialEmail" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">PASSWORD</label>
+                            <input type="text" name="initialPassword" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">CATATAN KHUSUS (OPTIONAL)</label>
+                            <input type="text" name="initialNotes" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white" placeholder="e.g. Jangan ganti profil">
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
+                            Save App Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+
