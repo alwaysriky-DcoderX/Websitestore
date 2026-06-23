@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+</head>
+<body  class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased min-h-screen">
+
+    <%- include('../partials/dashboard-navbar') %>
+    <%- include('../partials/user-sidebar') %>
+
+    <main class="pt-16 min-h-screen flex flex-col w-full transition-all duration-300">
+        <div class="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-4xl mx-auto">
+            
+            <div class="mb-10" data-aos="fade-down">
+                <a href="/dashboard" class="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2 mb-4 hover:gap-3 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                    Back to Dashboard
+                </a>
+                <h1 class="text-3xl font-black text-slate-900 dark:text-white">Order Details</h1>
+            </div>
+
+            <div class="bg-white dark:bg-[#12121A] rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden" data-aos="fade-up">
+                <!-- Status Header -->
+                <div class="p-8 md:p-10 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-50/50 dark:bg-slate-900/20">
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Transaction ID</p>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">#<%= order.orderId %></h2>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest 
+                            <%= order.status === 'completed' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 
+                               order.status === 'pending' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 
+                               'bg-red-500 text-white shadow-lg shadow-red-500/20' %>">
+                            <%= order.status %>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Product Details -->
+                <div class="p-8 md:p-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div class="space-y-6">
+                            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Product Information</h3>
+                            <div class="flex items-start gap-4">
+                                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-600/20">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-black text-slate-900 dark:text-white"><%= order.productNameSnap %></p>
+                                    <p class="text-xs font-bold text-slate-500 mt-1">Paid: Rp <%= order.amount.toLocaleString('id-ID') %></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Access Details</h3>
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 space-y-4">
+                                <% if (order.status === 'completed') { %>
+                                    <% if (order.productId === 'topup-balance-product') { %>
+                                        <!-- Gorgeous Struk Topup -->
+                                        <div class="space-y-6 text-center py-6">
+                                            <div class="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full mx-auto flex items-center justify-center mb-2 shadow-inner">
+                                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-lg font-black text-slate-900 dark:text-white">Top-up Berhasil</h4>
+                                                <p class="text-xs font-bold text-slate-500 mt-1">Saldo Anda telah ditambahkan secara instan.</p>
+                                            </div>
+                                            
+                                            <div class="border-t border-dashed border-slate-200 dark:border-slate-800 my-4 pt-4 text-left space-y-3">
+                                                <div class="flex justify-between items-center text-xs">
+                                                    <span class="font-bold text-slate-400">Nominal Deposit:</span>
+                                                    <span class="font-black text-slate-800 dark:text-slate-200">Rp <%= order.amount.toLocaleString('id-ID') %></span>
+                                                </div>
+                                                <div class="flex justify-between items-center text-xs">
+                                                    <span class="font-bold text-slate-400">Metode Bayar:</span>
+                                                    <span class="font-black text-slate-800 dark:text-slate-200 uppercase"><%= order.paymentGateway %></span>
+                                                </div>
+                                                <div class="flex justify-between items-center text-xs">
+                                                    <span class="font-bold text-slate-400">Waktu Bayar:</span>
+                                                    <span class="font-black text-slate-800 dark:text-slate-200"><%= new Date(order.updatedAt).toLocaleString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'}) %></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                Status transaksi telah diverifikasi penuh oleh gerbang pembayaran otomatis. Terima kasih!
+                                            </div>
+                                        </div>
+                                    <% } else if (order.data.serverPassword) { %>
+                                        <!-- Spec Cards Grid -->
+                                        <div class="grid grid-cols-3 gap-3 mb-6">
+                                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
+                                                <p class="text-[9px] font-black text-slate-400 uppercase mb-1">RAM</p>
+                                                <p class="text-sm font-black text-blue-600 dark:text-blue-400"><%= formatPteroSize(order.product.pteroMemory) %></p>
+                                            </div>
+                                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
+                                                <p class="text-[9px] font-black text-slate-400 uppercase mb-1">CPU</p>
+                                                <p class="text-sm font-black text-blue-600 dark:text-blue-400"><%= order.product.pteroCpu === 0 ? 'Unlimited' : order.product.pteroCpu + '%' %></p>
+                                            </div>
+                                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
+                                                <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Disk</p>
+                                                <p class="text-sm font-black text-blue-600 dark:text-blue-400"><%= formatPteroSize(order.product.pteroDisk) %></p>
+                                            </div>
+                                        </div>
+
+                                        <div class="space-y-4">
+                                            <div>
+                                                <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Server ID</p>
+                                                <code class="text-slate-700 dark:text-slate-300 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 select-all"><%= order.data.serverId || '-' %></code>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Server Username</p>
+                                                <code class="text-slate-700 dark:text-slate-300 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 select-all"><%= order.data.serverUsername || '-' %></code>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Server Password</p>
+                                                <code class="text-blue-600 dark:text-blue-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 select-all"><%= order.data.serverPassword %></code>
+                                            </div>
+                                            <div class="pt-2">
+                                                <a href="<%= order.data.panelUrl %>" target="_blank" class="w-full inline-flex items-center justify-center gap-2 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all">
+                                                    Login to Panel <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        <% if (order.product.description) { %>
+                                            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 mt-6">
+                                                <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Catatan Produk</p>
+                                                <div class="text-xs font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-850 p-4 rounded-xl border border-slate-100 dark:border-slate-800 whitespace-pre-wrap"><%= order.product.description %></div>
+                                            </div>
+                                        <% } %>
+                                    <% } else if (order.data.accountEmail) { %>
+                                        <div>
+                                            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Email / Username</p>
+                                            <code class="text-blue-600 dark:text-blue-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 select-all"><%= order.data.accountEmail %></code>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Password</p>
+                                            <code class="text-blue-600 dark:text-blue-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 select-all"><%= order.data.accountPassword %></code>
+                                        </div>
+                                    <% } else if (order.data.downloadUrl) { %>
+                                        <a href="<%= order.data.downloadUrl %>" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
+                                            Download Asset <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        </a>
+                                    <% } %>
+                                    
+                                    <% if (order.data.instructions) { %>
+                                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+                                            <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Instructions</p>
+                                            <p class="text-xs font-bold text-slate-600 dark:text-slate-400 whitespace-pre-wrap"><%= order.data.instructions %></p>
+                                        </div>
+                                    <% } %>
+                                    
+                                    <% if (order.data.smmOrderId) { %>
+                                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+                                            <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Status Provider SMM (Live)</p>
+                                            <div class="flex items-center gap-2">
+                                                <% const sStatus = (order.data.smmStatus || 'Processing').toLowerCase(); %>
+                                                <% if (sStatus === 'success' || sStatus === 'completed') { %>
+                                                    <span class="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg text-xs font-black"><%= order.data.smmStatus || 'Success' %></span>
+                                                <% } else if (sStatus === 'error' || sStatus === 'canceled' || sStatus === 'partial') { %>
+                                                    <span class="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-black"><%= order.data.smmStatus %></span>
+                                                <% } else { %>
+                                                    <span class="px-3 py-1.5 bg-amber-500/10 text-amber-500 rounded-lg text-xs font-black animate-pulse"><%= order.data.smmStatus || 'Pending' %>...</span>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                <% } else if (order.status === 'pending') { %>
+                                    <div class="text-center py-4">
+                                        <p class="text-xs font-bold text-slate-500 mb-4">Menunggu pembayaran...</p>
+                                        <a href="/dashboard/orders/pay/<%= order.id %>" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-blue-600/20">Bayar Sekarang</a>
+                                    </div>
+                                <% } else { %>
+                                    <p class="text-xs font-bold text-red-500">Pesanan ini gagal diproses. Silakan hubungi admin.</p>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init();
+    </script>
+</body>
+</html>
