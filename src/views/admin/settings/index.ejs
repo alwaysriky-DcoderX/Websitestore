@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300 transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-white/50 dark:bg-slate-800/50 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 transition-colors">
+            <div class="flex items-center gap-4">
+                <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 class="text-xl font-bold text-slate-800 dark:text-white">System Settings</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="uiCore.toggleTheme()" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all duration-200">
+                    <svg class="w-5 h-5 text-slate-600 dark:text-slate-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg class="w-5 h-5 text-slate-600 dark:text-slate-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <form action="/admin/settings/save" method="POST" class="max-w-4xl space-y-8">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Branding Section -->
+                    <section class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+                        <h2 class="text-sm font-black text-blue-500 uppercase tracking-widest mb-6 pb-2 border-b border-slate-100 dark:border-slate-700">General Branding</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Website Name</label>
+                                <input type="text" name="web_name" value="<%= settings.web_name %>" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Logo URL</label>
+                                    <input type="text" name="web_logo" value="<%= settings.web_logo %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Favicon URL</label>
+                                    <input type="text" name="web_favicon" value="<%= settings.web_favicon %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Base Domain URL</label>
+                                <p class="text-[10px] text-slate-400 mb-2">Used for API docs and QRIS callbacks.</p>
+                                <input type="url" name="web_domain" value="<%= settings.web_domain %>" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://yourdomain.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Website Description (Meta Tag)</label>
+                                <textarea name="web_description" rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"><%= settings.web_description %></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Footer Copyright</label>
+                                <input type="text" name="footer_copyright" value="<%= settings.footer_copyright %>" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SEO & Tracking -->
+                    <section class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+                        <h2 class="text-sm font-black text-purple-500 uppercase tracking-widest mb-6 pb-2 border-b border-slate-100 dark:border-slate-700">SEO & Tracking</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Meta Description</label>
+                                <textarea name="web_description" rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"><%= settings.web_description %></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Meta Keywords</label>
+                                <input type="text" name="web_keywords" value="<%= settings.web_keywords %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Theme Color</label>
+                                <input type="color" name="web_theme_color" value="<%= settings.web_theme_color %>" class="w-full h-10 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">GTag Measurement ID</label>
+                                <p class="text-[10px] text-slate-400 mb-2">Enter your Google Analytics ID (e.g., G-XXXXXXXXXX).</p>
+                                <input type="text" name="gtag_id" value="<%= settings.gtag_id %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="G-XXXXXXXXXX">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Pricing & Rules -->
+                    <section class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors md:col-span-2">
+                        <h2 class="text-sm font-black text-emerald-500 uppercase tracking-widest mb-6 pb-2 border-b border-slate-100 dark:border-slate-700">System Configurations</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Reseller Upgrade Price (Rp)</label>
+                                <p class="text-[10px] text-slate-400 mb-2">Cost to upgrade user role to Reseller.</p>
+                                <input type="number" name="reseller_upgrade_price" value="<%= settings.reseller_upgrade_price %>" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Global Profit Margin (%)</label>
+                                <p class="text-[10px] text-slate-400 mb-2">Percentage added to all base prices for user checkout and API.</p>
+                                <input type="number" name="global_margin_percent" value="<%= settings.global_margin_percent %>" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Telegram Notifications -->
+                    <section class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
+                        <h2 class="text-sm font-black text-blue-500 uppercase tracking-widest mb-6 pb-2 border-b border-slate-100 dark:border-slate-700">Telegram Notifications</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Bot Token</label>
+                                <input type="text" name="telegram_bot_token" value="<%= settings.telegram_bot_token %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="123456:ABC-DEF...">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Channel ID</label>
+                                <input type="text" name="telegram_channel_id" value="<%= settings.telegram_channel_id %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="-100...">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Voucher Notif Template</label>
+                                <p class="text-[10px] text-slate-400 mb-2">Variables: @website (domain), @voucher (code)</p>
+                                <textarea name="telegram_notif_template" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"><%= settings.telegram_notif_template %></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Email Configuration -->
+                    <!-- Email Configuration -->
+                    <section class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md md:col-span-2">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div class="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-black text-slate-900 dark:text-white">Email Systems Configuration</h2>
+                                <p class="text-xs text-slate-500 font-medium">Configure SMTP servers for different automated processes.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Notification Email -->
+                            <div class="bg-slate-50/50 dark:bg-slate-900/30 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span> 1. Notification (Receipts)</h3>
+                                <div class="space-y-4">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Host</label>
+                                        <input type="text" name="email_smtp_host" value="<%= settings.email_smtp_host %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Port</label>
+                                        <input type="text" name="email_smtp_port" value="<%= settings.email_smtp_port %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP User</label>
+                                        <input type="text" name="email_smtp_user" value="<%= settings.email_smtp_user %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Pass</label>
+                                        <input type="password" name="email_smtp_pass" value="<%= settings.email_smtp_pass %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sender Name</label>
+                                        <input type="text" name="email_from_name" value="<%= settings.email_from_name %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-blue-500 outline-none transition-all">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Support Email -->
+                            <div class="bg-slate-50/50 dark:bg-slate-900/30 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-purple-500"></span> 2. Support / Helpdesk</h3>
+                                <div class="space-y-4">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Host</label>
+                                        <input type="text" name="email_support_host" value="<%= settings.email_support_host %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-purple-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Port</label>
+                                        <input type="text" name="email_support_port" value="<%= settings.email_support_port %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-purple-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP User</label>
+                                        <input type="text" name="email_support_user" value="<%= settings.email_support_user %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-purple-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Pass</label>
+                                        <input type="password" name="email_support_pass" value="<%= settings.email_support_pass %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-purple-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sender Name</label>
+                                        <input type="text" name="email_support_from_name" value="<%= settings.email_support_from_name %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-purple-500 outline-none transition-all">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- OTP Email -->
+                            <div class="bg-slate-50/50 dark:bg-slate-900/30 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span> 3. Security (OTP/Reset)</h3>
+                                <div class="space-y-4">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Host</label>
+                                        <input type="text" name="email_otp_host" value="<%= settings.email_otp_host %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-orange-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Port</label>
+                                        <input type="text" name="email_otp_port" value="<%= settings.email_otp_port %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-orange-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP User</label>
+                                        <input type="text" name="email_otp_user" value="<%= settings.email_otp_user %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-orange-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">SMTP Pass</label>
+                                        <input type="password" name="email_otp_pass" value="<%= settings.email_otp_pass %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-orange-500 outline-none transition-all">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sender Name</label>
+                                        <input type="text" name="email_otp_from_name" value="<%= settings.email_otp_from_name %>" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-orange-500 outline-none transition-all">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- AI Support -->
+                    <section class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div class="w-12 h-12 bg-orange-50 dark:bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-black text-slate-900 dark:text-white">AI Live Support</h2>
+                                <p class="text-xs text-slate-500 font-medium">Powered by Groq (Llama 3.3).</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Groq API Key</label>
+                            <div class="relative">
+                                <input type="password" name="groq_api_key" value="<%= settings.groq_api_key %>" class="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-3 text-sm font-bold text-slate-800 dark:text-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all" placeholder="gsk_...">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- External API Keys -->
+                    <section class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-sm transition-all hover:shadow-md md:col-span-2">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-black text-slate-900 dark:text-white">External API Keys</h2>
+                                <p class="text-xs text-slate-500 font-medium">Configure credentials for Payment, SMS, and SMM Panel providers.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Pakasir -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Pakasir API Key</label>
+                                <input type="password" name="pakasir_api_key" value="<%= settings.pakasir_api_key %>" class="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-3 text-sm font-bold text-slate-800 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Pakasir Slug (Project ID)</label>
+                                <input type="text" name="pakasir_slug" value="<%= settings.pakasir_slug %>" class="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-3 text-sm font-bold text-slate-800 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                            </div>
+
+                            <!-- SMS Code / Rumah OTP -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">SMSCode API Key</label>
+                                <input type="password" name="smscode_api_key" value="<%= settings.smscode_api_key %>" class="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-3 text-sm font-bold text-slate-800 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                            </div>
+
+
+                            <!-- MedanPedia SMM -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">MedanPedia SMM API ID</label>
+                                <input type="text" name="smm_api_id" value="<%= settings.smm_api_id %>" class="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-3 text-sm font-bold text-slate-800 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">MedanPedia SMM API Key</label>
+                                <input type="password" name="smm_api_key" value="<%= settings.smm_api_key %>" class="w-full bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-3 text-sm font-bold text-slate-800 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                </div>
+
+                <div class="flex justify-end pt-4">
+                    <button type="submit" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 transition-all hover:-translate-y-1 active:scale-[0.98]">
+                        Save All Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+
+
