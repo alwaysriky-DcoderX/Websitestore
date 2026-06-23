@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 transition-colors">
+            <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white">Edit Node: <%= node.name %></h1>
+            <div></div>
+        </header>
+
+        <div class="flex-1 p-4 sm:p-6">
+            <div class="max-w-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm">
+                <form action="/admin/nodes/edit/<%= node.id %>" method="POST" class="space-y-6">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Display Name</label>
+                        <input type="text" name="name" value="<%= node.name %>" required class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Panel Domain (URL)</label>
+                        <input type="url" name="domain" value="<%= node.domain %>" required class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Location (ID, SG, US, etc.)</label>
+                        <input type="text" name="location" value="<%= node.location %>" required class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Application API Key (PLTA)</label>
+                        <input type="text" name="apiKey" value="<%= node.apiKey %>" required class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Location ID</label>
+                            <input type="number" name="locationId" value="<%= node.locationId %>" required class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Egg ID</label>
+                            <input type="number" name="eggId" value="<%= node.eggId %>" required class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nest ID</label>
+                            <input type="number" name="nestId" value="<%= node.nestId %>" required class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 pt-6 mt-6 border-t border-slate-200 dark:border-slate-700">
+                        <a href="/admin/nodes" class="flex-1 text-center bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold py-3.5 rounded-xl transition-all">Cancel</a>
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
