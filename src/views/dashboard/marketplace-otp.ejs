@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <%- include('../partials/head') %>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .card-glow:hover {
+            box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.25);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        }
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes progress {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .progress-animate {
+            animation: progress 2.5s infinite linear;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: .2; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        .dot-pulse span {
+            animation: pulseDot 1.4s infinite ease-in-out both;
+        }
+        .dot-pulse span:nth-child(2) { animation-delay: .2s; }
+        .dot-pulse span:nth-child(3) { animation-delay: .4s; }
+    </style>
+</head>
+<body  class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased min-h-screen transition-colors duration-300">
+
+    <%- include('../partials/dashboard-navbar') %>
+    <%- include('../partials/user-sidebar') %>
+
+    <% 
+      const nokosCategory = categories.find(c => c.type === 'otp');
+      const nokosCatId = nokosCategory ? nokosCategory.id : 'nokos_virtual_cat';
+      const nokosProducts = products.filter(p => p.category && p.category.type === 'otp');
+      
+      const smmCategoryDb = categories.find(c => c.type === 'smm');
+      const smmCatId = smmCategoryDb ? smmCategoryDb.id : 'smm_virtual_cat';
+      const smmCategoriesSet = new Set();
+      let smmServicesSafe = [];
+      if (typeof smmServices !== 'undefined' && Array.isArray(smmServices)) {
+          smmServicesSafe = smmServices;
+          smmServices.forEach(s => {
+              if (s.category) smmCategoriesSet.add(s.category);
+          });
+      }
+      const smmServiceCategories = Array.from(smmCategoriesSet).sort();
+      
+      const requestedType = 'otp';
+      let initialTab = 'all';
+      let pageTitle = 'Marketplace';
+      let pageSubtitle = 'Pilih dan deploy server instan maupun akun aplikasi premium pilihan Anda.';
+      if (requestedType) {
+          const matchingCat = categories.find(c => c.type === requestedType);
+          if (matchingCat) {
+              initialTab = matchingCat.id;
+              pageTitle = matchingCat.name;
+              pageSubtitle = 'Layanan ' + matchingCat.name + ' terbaik untuk Anda.';
+          } else {
+              if (requestedType === 'pterodactyl') pageTitle = 'Panel Pterodactyl';
+              else if (requestedType === 'smm') { pageTitle = 'SMM Panel'; initialTab = smmCatId; }
+              else if (requestedType === 'otp') { pageTitle = 'Nokos / OTP'; initialTab = nokosCatId; }
+              else if (requestedType === 'script') pageTitle = 'Script & Source Code';
+              else if (requestedType === 'premium_app') pageTitle = 'Aplikasi Premium';
+          }
+      }
+    %>
+
+    <div class="sm:ml-64 bg-slate-50 dark:bg-[#0B0E1A] min-h-screen text-slate-800 dark:text-slate-200 transition-colors duration-300">
+        <main class="pt-16 min-h-screen flex flex-col w-full transition-all duration-300">
+        <div class="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-7xl mx-auto space-y-6 sm:space-y-8" x-data="{ 
+            activeTab: '<%= initialTab %>',
+            searchQuery: '',
+            activeNode: 'all',
+
+            // Nokos Inline Checkout State
+            selectedNokosProduct: null,
+            nokosCountries: [],
+            nokosSearch: '',
+            loadingCountries: false,
+            loadingOrder: false,
+            selectedCountryName: '',
+            
+            // Order Monitoring State
+            showStatus: false,
+            phoneNumber: 'Memuat...',
+            otpCode: '------',
+            otpReceived: false,
+            monitorInterval: null,
+            orderId: null,
+
+            // Payment & QRIS State
+            showPaymentModal: false,
+            selectedRate: null,
+            showQrisModal: false,
+            qrisString: '',
+            qrisOrderId: '',
+            qrisInterval: null,
+
+            async init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const resumeId = urlParams.get('resumeOrder');
+                if (resumeId) {
+                    try {
+                        const res = await fetch('/nokos/active-order/' + resumeId);
+                        const data = await res.json();
+                        if (data.success) {
+                            this.selectedNokosProduct = { id: data.productId, name: data.productName };
+                            this.activeTab = '<%= nokosCatId %>';
+                            this.orderId = resumeId;
+                            this.phoneNumber = data.phoneNumber;
+                            this.showStatus = true;
+                            this.otpCode = data.otpCode || '------';
+                            this.otpReceived = data.status === 'completed';
+                            
+                            if (data.status === 'pending') {
+                                this.startMonitoring();
+                            }
+                            window.uiCore.showToast('Melanjutkan pemantauan OTP...', 'info');
+                        } else {
+                            window.uiCore.showToast(data.message || 'Gagal memuat detail pesanan.', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Failed to resume order:', e);
+                        window.uiCore.showToast('Gagal memulihkan sesi pesanan virtual.', 'error');
+                    }
+                }
+            },
+
+            async selectNokosProduct(product) {
+                this.activeTab = '<%= nokosCatId %>';
+                this.selectedNokosProduct = product;
+                this.loadingCountries = true;
+                this.nokosCountries = [];
+                this.nokosSearch = '';
+                this.selectedCountryName = '';
+                this.showStatus = false;
+                this.otpReceived = false;
+                this.otpCode = '------';
+                if (this.monitorInterval) {
+                    clearInterval(this.monitorInterval);
+                    this.monitorInterval = null;
+                }
+
+                try {
+                    const res = await fetch('/nokos/countries/' + product.id);
+                    const data = await res.json();
+                    if (data.success) {
+                        this.nokosCountries = data.countries;
+                    } else {
+                        window.uiCore.showToast(data.message || 'Gagal memuat negara.', 'error');
+                        this.selectedNokosProduct = null;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    window.uiCore.showToast('Gagal memuat daftar negara.', 'error');
+                    this.selectedNokosProduct = null;
+                } finally {
+                    this.loadingCountries = false;
+                }
+            },
+
+            get filteredNokosCountries() {
+                if (!this.nokosSearch) return this.nokosCountries;
+                return this.nokosCountries.filter(c => 
+                    c.country_name.toLowerCase().includes(this.nokosSearch.toLowerCase())
+                );
+            },
+
+            get uniqueNokosCountries() {
+                const seen = new Set();
+                const unique = [];
+                this.nokosCountries.forEach(c => {
+                    if (!seen.has(c.country_name)) {
+                        seen.add(c.country_name);
+                        unique.push(c);
+                    }
+                });
+                return unique.sort((a, b) => a.country_name.localeCompare(b.country_name));
+            },
+
+            get operatorRatesForSelectedCountry() {
+                if (!this.selectedCountryName) return [];
+                const options = this.nokosCountries.filter(c => c.country_name === this.selectedCountryName);
+                options.sort((a, b) => a.price - b.price);
+                if (options.length === 0) return [];
+                
+                return options.map((opt, index) => {
+                    let type = 'Standar';
+                    if (options.length > 1) {
+                        if (index === 0) type = 'Termurah';
+                        else if (index === options.length - 1) type = 'Tertinggi / Premium';
+                    }
+                    return {
+                        type,
+                        ...opt
+                    };
+                });
+            },
+            getCountryCode(name) {
+                if (!name) return 'id';
+                const lower = name.toLowerCase();
+                if (lower.includes('indonesia')) return 'id';
+                if (lower.includes('united states') || lower.includes('amerika')) return 'us';
+                if (lower.includes('united kingdom') || lower.includes('inggris')) return 'gb';
+                if (lower.includes('malaysia')) return 'my';
+                if (lower.includes('russia') || lower.includes('rusia')) return 'ru';
+                if (lower.includes('vietnam')) return 'vn';
+                if (lower.includes('thailand')) return 'th';
+                if (lower.includes('philippines') || lower.includes('filipina')) return 'ph';
+                if (lower.includes('singapore') || lower.includes('singapura')) return 'sg';
+                if (lower.includes('india')) return 'in';
+                if (lower.includes('brazil')) return 'br';
+                if (lower.includes('cambodia') || lower.includes('kamboja')) return 'kh';
+                if (lower.includes('myanmar')) return 'mm';
+                
+                const country = this.nokosCountries.find(c => c.country_name === name);
+                if (country && country.country_emoji) {
+                    const emoji = country.country_emoji;
+                    if (emoji && emoji.length >= 2) {
+                        const codePoints = Array.from(emoji).map(c => c.codePointAt(0));
+                        const chars = codePoints
+                            .filter(cp => cp >= 127462 && cp <= 127487)
+                            .map(cp => String.fromCharCode(cp - 127462 + 65));
+                        if (chars.length > 0) return chars.join('').toLowerCase();
+                    }
+                }
+                return 'id';
+            },
+
+            openPaymentModal(rate) {
+                this.selectedRate = rate;
+                this.showPaymentModal = true;
+            },
+
+            async processPayment(method) {
+                if (this.loadingOrder || !this.selectedRate) return;
+                this.showPaymentModal = false;
+                this.loadingOrder = true;
+
+                if (method === 'balance') {
+                    try {
+                        const response = await fetch('/nokos/order', {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'x-csrf-token': '<%= typeof csrfToken !== "undefined" ? csrfToken : "" %>'
+                            },
+                            body: JSON.stringify({
+                                serviceId: this.selectedNokosProduct.id,
+                                countryId: this.selectedRate.id
+                            })
+                        });
+                        
+                        let data;
+                        try { data = await response.json(); } catch(err) { throw new Error('Server error'); }
+
+                        if (data.success) {
+                            this.orderId = data.orderId;
+                            this.phoneNumber = data.phoneNumber;
+                            this.showStatus = true;
+                            window.uiCore.showToast('Nomor virtual berhasil disewa!', 'success');
+                            
+                            const balanceEl = document.querySelector('[data-balance-text]');
+                            if (balanceEl) {
+                                const current = Number(balanceEl.innerText.replace(/[^0-9]/g, '')) || 0;
+                                balanceEl.innerText = 'Rp ' + (current - this.selectedRate.price).toLocaleString('id-ID');
+                            }
+                            this.startMonitoring();
+                        } else {
+                            window.uiCore.showToast(data.message || 'Gagal memesan nomor.', 'error');
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        window.uiCore.showToast('Kesalahan koneksi server.', 'error');
+                    } finally {
+                        this.loadingOrder = false;
+                    }
+                } else if (method === 'qris') {
+                    try {
+                        const response = await fetch('/nokos/qris-order', {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'x-csrf-token': '<%= typeof csrfToken !== "undefined" ? csrfToken : "" %>'
+                            },
+                            body: JSON.stringify({
+                                serviceId: this.selectedNokosProduct.id,
+                                countryId: this.selectedRate.id
+                            })
+                        });
+                        let data;
+                        try { data = await response.json(); } catch(err) { throw new Error('Server error'); }
+                        
+                        if (data.success) {
+                            this.qrisString = data.qrString;
+                            this.qrisOrderId = data.orderId;
+                            this.showQrisModal = true;
+                            this.startQrisPolling();
+                        } else {
+                            window.uiCore.showToast(data.message || 'Gagal memuat QRIS.', 'error');
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        window.uiCore.showToast('Kesalahan membuat QRIS.', 'error');
+                    } finally {
+                        this.loadingOrder = false;
+                    }
+                }
+            },
+
+            startQrisPolling() {
+                if (this.qrisInterval) clearInterval(this.qrisInterval);
+                this.qrisInterval = setInterval(async () => {
+                    try {
+                        const res = await fetch('/nokos/qris-status/' + this.qrisOrderId);
+                        const data = await res.json();
+                        
+                        if (data.status === 'completed') {
+                            clearInterval(this.qrisInterval);
+                            this.showQrisModal = false;
+                            
+                            this.orderId = data.orderId || this.qrisOrderId;
+                            this.phoneNumber = data.phoneNumber;
+                            this.showStatus = true;
+                            window.uiCore.showToast('Pembayaran QRIS Lunas! Nomor berhasil didapat.', 'success');
+                            this.startMonitoring();
+                        } else if (data.status === 'failed') {
+                            clearInterval(this.qrisInterval);
+                            this.showQrisModal = false;
+                            window.uiCore.showToast(data.message || 'Transaksi gagal atau stok habis, saldo Anda telah dikembalikan.', 'error');
+                        }
+                    } catch (e) {
+                        console.error('QRIS Polling Error:', e);
+                    }
+                }, 5000);
+            },
+
+            startMonitoring() {
+                if (this.monitorInterval) clearInterval(this.monitorInterval);
+                this.monitorInterval = setInterval(async () => {
+                    try {
+                        const res = await fetch('/nokos/status/' + this.orderId);
+                        const data = await res.json();
+                        if (data.success) {
+                            if (data.status === 'completed') {
+                                this.otpCode = data.otpCode;
+                                this.otpReceived = true;
+                                clearInterval(this.monitorInterval);
+                                this.monitorInterval = null;
+                                window.uiCore.showToast('SMS OTP Berhasil Diterima!', 'success');
+                            } else if (data.status === 'failed') {
+                                clearInterval(this.monitorInterval);
+                                this.monitorInterval = null;
+                                window.uiCore.showToast('Order kadaluwarsa / dibatalkan.', 'error');
+                                this.resetCheckout();
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Monitoring error:', e);
+                    }
+                }, 5000);
+            },
+
+            resetCheckout() {
+                this.selectedNokosProduct = null;
+                this.showStatus = false;
+                this.otpReceived = false;
+                this.otpCode = '------';
+                if (this.monitorInterval) {
+                    clearInterval(this.monitorInterval);
+                    this.monitorInterval = null;
+                }
+            },
+
+            copyPhone() {
+                navigator.clipboard.writeText(this.phoneNumber);
+                window.uiCore.showToast('Nomor virtual berhasil disalin!', 'success');
+            },
+
+            copyOtp() {
+                navigator.clipboard.writeText(this.otpCode);
+                window.uiCore.showToast('Kode OTP berhasil disalin!', 'success');
+            }
+        }">
+
+            <!-- Normal View Container (Products and Categories) - Always Visible -->
+            <div class="space-y-6 sm:space-y-8">
+                <!-- Header and Filter controls in a modern cluster layout -->
+                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-6 border-b border-slate-200/50 dark:border-slate-800/50">
+                    
+                <div data-aos="fade-right">
+                    <a href="/dashboard/marketplace" class="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-500 mb-4 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Kembali ke Hub
+                    </a>
+                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight"><%= title %></h1>
+    
+                        <p class="text-sm font-medium text-slate-500 mt-1"><%= pageSubtitle %></p>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                        <% if (!requestedType) { %>
+                        <!-- Category Tabs with elegant flex wrap grid -->
+                        <div class="flex flex-wrap bg-white dark:bg-[#12121A] p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-full gap-1.5" data-aos="fade-left">
+                            <button @click="activeTab = 'all'; activeNode = 'all'" :class="activeTab === 'all' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'" class="px-5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap uppercase tracking-wider">
+                                Semua Produk
+                            </button>
+                            <% categories.forEach(cat => { %>
+                                <button @click="activeTab = '<%= cat.id %>'; activeNode = 'all'" :class="activeTab === '<%= cat.id %>' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'" class="px-5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap uppercase tracking-wider">
+                                    <%= cat.name %>
+                                </button>
+                            <% }) %>
+                            
+                            <% if (!nokosCategory && nokosProducts.length > 0) { %>
+                                <button @click="activeTab = '<%= nokosCatId %>'; activeNode = 'all'" :class="activeTab === '<%= nokosCatId %>' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'" class="px-5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap uppercase tracking-wider">
+                                    Nokos / OTP
+                                </button>
+                            <% } %>
+                        </div>
+                        <% } %>
+
+                        <!-- Modern Search Bar -->
+                        <div class="relative min-w-[240px]" data-aos="fade-left" data-aos-delay="100">
+                            <input type="text" x-model="searchQuery" placeholder="Cari layanan..." class="w-full bg-white dark:bg-[#12121A] border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-3 pl-11 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-300">
+                            <svg class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <% 
+                  const pteroCategories = categories.filter(c => c.type === 'pterodactyl');
+                  const pteroCatIds = pteroCategories.map(c => c.id);
+                  const pteroNodes = [];
+                  const seenNodeIds = new Set();
+                  products.forEach(p => {
+                      if (p.pteroNode && !seenNodeIds.has(p.pteroNode.id)) {
+                          seenNodeIds.add(p.pteroNode.id);
+                          pteroNodes.push(p.pteroNode);
+                      }
+                  });
+                %>
+
+                <!-- Node Filter Panel -->
+                <% if (pteroNodes.length > 0) { %>
+                    <div x-show="[<%= pteroCatIds.map(id => `'${id}'`).join(',') %>].includes(activeTab)"
+                         x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 -translate-y-3"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-200"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-3"
+                         class="p-6 bg-white dark:bg-[#12121A] rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden"
+                         x-cloak
+                     >
+                         <div class="absolute top-0 left-0 w-1.5 h-full bg-blue-600"></div>
+                         <span class="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[9px] font-black bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20 mb-2 uppercase tracking-widest">Region Node</span>
+                         <p class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 ml-0.5">Filter Berdasarkan Lokasi / Spesifikasi Node:</p>
+                         <div class="flex flex-wrap gap-2">
+                             <button @click="activeNode = 'all'" 
+                                     :class="activeNode === 'all' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'" 
+                                     class="px-4.5 py-2.5 rounded-xl text-xs font-black transition-all uppercase tracking-wider active:scale-95"
+                             >
+                                 Semua Lokasi
+                             </button>
+                             <% pteroNodes.forEach(node => { %>
+                                 <button @click="activeNode = '<%= node.id %>'" 
+                                         :class="activeNode === '<%= node.id %>' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'" 
+                                         class="px-4.5 py-2.5 rounded-xl text-xs font-black transition-all uppercase tracking-wider active:scale-95 flex items-center gap-1.5"
+                                 >
+                                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                     <%= node.name %> [<%= node.location || 'ID' %>]
+                                 </button>
+                             <% }) %>
+                         </div>
+                     </div>
+                 <% } %>
+       
+                 <!-- Products Grid (Hidden for Nokos and SMM category to load unified block instead) -->
+                 <div x-show="activeTab !== '<%= nokosCatId %>' && activeTab !== '<%= smmCatId %>'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                     <% products.forEach(product => { %>
+                         <div x-show="((activeTab === 'all' && '<%= product.category ? product.category.type : '' %>' !== 'otp' && '<%= product.category ? product.category.type : '' %>' !== 'smm') || activeTab === '<%= product.category ? product.category.id : 'other' %>') && 
+                                     (activeNode === 'all' || '<%= product.pteroNodeId || (product.pteroNode ? product.pteroNode.id : null) %>' === activeNode) && 
+                                     ('<%= product.name %>'.toLowerCase().includes(searchQuery.toLowerCase()))"  
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4 scale-98"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             class="h-full"
+                        >
+                            <%- include('../partials/product-card', { product, isDashboard: true }) %>
+                        </div>
+                    <% }) %>
+                 </div>
+
+                     <!-- Dynamic Service Platform Switcher — Premium Dropdown -->
+                     <div x-show="activeTab === '<%= nokosCatId %>'" x-cloak class="w-full">
+                         <% if (nokosProducts.length === 0) { %>
+                             <div class="py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-[#12121A] rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 shadow-sm transition-colors mt-6">
+                                 <div class="w-20 h-20 bg-slate-100 dark:bg-slate-800/50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-400 dark:text-slate-500">
+                                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                 </div>
+                                 <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Layanan OTP Tidak Tersedia</h3>
+                                 <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">Saat ini layanan OTP / Nomor Virtual sedang dinonaktifkan atau kosong. Silakan periksa kembali nanti.</p>
+                             </div>
+                         <% } else { %>
+                             <div class="relative bg-gradient-to-br from-white to-slate-50/80 dark:from-[#0E1626] dark:to-[#0B0E1A] rounded-[2.5rem] p-6 sm:p-8 border border-slate-200/80 dark:border-white/5 shadow-2xl shadow-blue-900/10 overflow-hidden group"
+                          x-data="{
+                            serviceOpen: false,
+                            serviceSearch: ''
+                          }"
+                          @keydown.escape="serviceOpen = false"
+                          @click.away="serviceOpen = false"
+                     >
+                         <!-- Ambient glow -->
+                         <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/15 blur-[100px] rounded-full pointer-events-none"></div>
+                         <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+
+                         <div class="relative z-10">
+                             <!-- Header -->
+                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
+                                 <div>
+                                     <div class="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-[10px] font-black bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20 uppercase tracking-wider mb-3">
+                                         <span class="relative flex h-2 w-2 mr-0.5">
+                                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                             <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                         </span>
+                                         Virtual OTP Platform
+                                     </div>
+                                     <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Layanan Virtual OTP</h2>
+                                     <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">Pilih platform OTP untuk melihat daftar negara dan rate real-time.</p>
+                                 </div>
+                             </div>
+
+                             <!-- Service Dropdown + Selected Preview -->
+                             <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-start">
+                                 <!-- Dropdown Trigger + Menu -->
+                                 <div class="relative flex-1">
+                                     <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Pilih Platform / Layanan</label>
+
+                                     <!-- Trigger Button -->
+                                     <button type="button"
+                                             @click="serviceOpen = !serviceOpen; serviceSearch = ''; $nextTick(() => $refs.serviceSearchInput && $refs.serviceSearchInput.focus())"
+                                             class="w-full flex items-center justify-between gap-3 bg-white/80 dark:bg-[#181C2A] border-2 rounded-2xl px-5 py-4 transition-all duration-200 cursor-pointer shadow-sm select-none"
+                                             :class="serviceOpen ? 'border-blue-500/60 ring-2 ring-blue-500/20' : 'border-slate-200 dark:border-white/5 hover:border-blue-400/50'"
+                                     >
+                                         <div class="flex items-center gap-3 min-w-0">
+                                             <template x-if="!selectedNokosProduct">
+                                                 <div class="flex items-center gap-3">
+                                                     <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0">
+                                                         <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                                     </div>
+                                                     <span class="text-sm font-bold text-slate-400 dark:text-slate-500">-- Pilih Layanan OTP --</span>
+                                                 </div>
+                                             </template>
+                                             <template x-if="selectedNokosProduct">
+                                                 <div class="flex items-center gap-3 min-w-0">
+                                                     <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30">
+                                                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                     </div>
+                                                     <div class="min-w-0">
+                                                         <p class="text-sm font-black text-slate-900 dark:text-white truncate" x-text="selectedNokosProduct.name"></p>
+                                                         <p class="text-[10px] text-blue-500 font-black uppercase tracking-widest">Aktif</p>
+                                                     </div>
+                                                 </div>
+                                             </template>
+                                         </div>
+                                         <svg class="w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300" :class="serviceOpen ? 'rotate-180 text-blue-500' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                         </svg>
+                                     </button>
+
+                                     <!-- Dropdown Panel -->
+                                     <div x-show="serviceOpen"
+                                          x-transition:enter="transition ease-out duration-200"
+                                          x-transition:enter-start="opacity-0 translate-y-2 scale-[0.98]"
+                                          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                          x-transition:leave="transition ease-in duration-150"
+                                          x-transition:leave-start="opacity-100"
+                                          x-transition:leave-end="opacity-0 translate-y-1"
+                                          class="absolute left-0 right-0 z-50 mt-2 bg-white dark:bg-[#13182B] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden"
+                                          x-cloak
+                                     >
+                                         <!-- Search Bar inside dropdown -->
+                                         <div class="p-3 border-b border-slate-100 dark:border-white/5">
+                                             <div class="relative">
+                                                 <input type="text"
+                                                        x-ref="serviceSearchInput"
+                                                        x-model="serviceSearch"
+                                                        placeholder="Cari layanan..."
+                                                        class="w-full bg-slate-50 dark:bg-[#181C2A] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 pl-10 text-sm font-bold focus:ring-2 focus:ring-blue-500/40 focus:outline-none transition-all text-slate-900 dark:text-white placeholder-slate-400"
+                                                 >
+                                                 <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                             </div>
+                                         </div>
+                                         <!-- Options List -->
+                                         <div class="max-h-[320px] overflow-y-auto p-2">
+                                             <% nokosProducts.forEach(product => { %>
+                                                 <button type="button"
+                                                         x-show="'<%= product.name %>'.toLowerCase().includes(serviceSearch.toLowerCase())"
+                                                         @click="selectNokosProduct({ id: '<%= product.id %>', name: '<%= product.name %>' }); serviceOpen = false; serviceSearch = ''"
+                                                         class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-150 text-left group/opt"
+                                                         :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'bg-blue-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200'"
+                                                 >
+                                                     <!-- Icon -->
+                                                     <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all"
+                                                          :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'bg-white/20' : 'bg-slate-100 dark:bg-white/5 group-hover/opt:bg-blue-50 dark:group-hover/opt:bg-blue-500/10'"
+                                                     >
+                                                         <% if (product.name.toLowerCase().includes('whatsapp')) { %>
+                                                             <svg class="w-5 h-5" :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'text-white' : 'text-[#25D366]'" viewBox="0 0 24 24" fill="currentColor"><path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.73.44 3.36 1.21 4.79L2 22l5.37-1.39c1.4.74 2.99 1.16 4.63 1.16 5.52 0 10-4.48 10-10S17.52 2 12.004 2zm5.72 14.15c-.24.68-1.2 1.24-1.65 1.29-.41.05-.95.07-1.54-.12-.36-.12-.83-.28-1.42-.53-2.52-1.07-4.14-3.66-4.26-3.82-.12-.16-1.02-1.37-1.02-2.61s.64-1.85.87-2.1c.24-.24.52-.3.69-.3.17 0 .34 0 .49.01.16.01.37-.06.58.45.21.52.73 1.79.79 1.91.06.12.1.26.02.42-.08.16-.18.26-.29.4-.12.13-.25.3-.36.42-.12.14-.25.29-.1.54.14.24.64 1.07 1.38 1.73.95.85 1.74 1.11 1.99 1.23.25.12.39.1.53-.06.14-.16.6-1.04.76-1.25.16-.21.32-.18.54-.1.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.18 1.26z"/></svg>
+                                                         <% } else if (product.name.toLowerCase().includes('telegram')) { %>
+                                                             <svg class="w-5 h-5" :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'text-white' : 'text-[#0088cc]'" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.12.89-.52 3.24-.73 4.37-.09.48-.27.64-.44.66-.37.03-.65-.25-.97-.46-.5-.33-.78-.53-1.26-.85-.56-.37-.2-.58.12-.91.08-.09 1.54-1.41 1.57-1.54.01-.02.01-.1-.04-.15-.05-.05-.12-.03-.17-.02-.07.01-1.22.77-3.44 2.27-.33.22-.62.33-.88.33-.29-.01-.84-.17-1.25-.3-.5-.17-.9-.26-.86-.55.02-.15.22-.3.6-.46 2.34-1.02 3.9-1.7 4.67-2.03 2.23-.93 2.69-1.09 2.99-1.1.07 0 .22.02.32.1.08.07.11.16.12.23 0 .04.01.12 0 .19z"/></svg>
+                                                         <% } else if (product.name.toLowerCase().includes('google')) { %>
+                                                             <svg class="w-5 h-5 bg-white rounded-full p-[2px]" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                                                         <% } else { %>
+                                                             <svg class="w-5 h-5" :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'text-white' : 'text-slate-400'" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                                         <% } %>
+                                                     </div>
+                                                     <!-- Text -->
+                                                     <div class="flex-1 min-w-0">
+                                                         <p class="text-sm font-black truncate"><%= product.name %></p>
+                                                         <p class="text-[10px] font-bold mt-0.5"
+                                                            :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'text-white/70' : 'text-slate-400'">
+                                                             Mulai dari Rp <%= ((product.price || 0) + (product.otpMargin || 0)).toLocaleString('id-ID') %>
+                                                         </p>
+                                                     </div>
+                                                     <!-- Checkmark if selected -->
+                                                     <template x-if="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>'">
+                                                         <svg class="w-4 h-4 text-white shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                                     </template>
+                                                 </button>
+                                             <% }) %>
+                                             <!-- Empty state -->
+                                             <% if (nokosProducts.length === 0) { %>
+                                             <div x-show="serviceSearch"
+                                             <% } else { %>
+                                             <div x-show="serviceSearch && !<%= nokosProducts.map(p => `'${p.name.replace(/'/g, "\\\\'")}'.toLowerCase().includes(serviceSearch.toLowerCase())`).join(' && !') %>"
+                                             <% } %>
+                                                  class="py-8 text-center">
+                                                 <p class="text-xs font-bold text-slate-400">Layanan tidak ditemukan 🔍</p>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+
+                                 <!-- Quick platform pills (mobile-friendly horizontal scroll) -->
+                                 <div class="sm:w-auto">
+                                     <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Populer</label>
+                                     <div class="flex gap-2 flex-wrap sm:flex-col">
+                                         <% nokosProducts.slice(0, 4).forEach(product => { %>
+                                             <button type="button"
+                                                     @click="selectNokosProduct({ id: '<%= product.id %>', name: '<%= product.name %>' })"
+                                                     class="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all duration-200 text-xs font-black whitespace-nowrap active:scale-95"
+                                                     :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>'
+                                                         ? 'border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                                         : 'border-slate-200 dark:border-white/5 bg-white/70 dark:bg-white/3 text-slate-600 dark:text-slate-400 hover:border-blue-400/50 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600'"
+                                             >
+                                                 <% if (product.name.toLowerCase().includes('whatsapp')) { %>
+                                                     <svg class="w-4 h-4 shrink-0" :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'text-white' : 'text-[#25D366]'" viewBox="0 0 24 24" fill="currentColor"><path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.73.44 3.36 1.21 4.79L2 22l5.37-1.39c1.4.74 2.99 1.16 4.63 1.16 5.52 0 10-4.48 10-10S17.52 2 12.004 2z"/></svg>
+                                                 <% } else if (product.name.toLowerCase().includes('telegram')) { %>
+                                                     <svg class="w-4 h-4 shrink-0" :class="selectedNokosProduct && selectedNokosProduct.id === '<%= product.id %>' ? 'text-white' : 'text-[#0088cc]'" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                                                 <% } else if (product.name.toLowerCase().includes('google')) { %>
+                                                     <svg class="w-4 h-4 shrink-0 bg-white rounded-full p-[2px]" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                                                 <% } else { %>
+                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                                 <% } %>
+                                                 <span><%= product.name.split(' ')[0] %></span>
+                                             </button>
+                                         <% }) %>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             <!-- Empty prompt when nothing selected -->
+                             <div x-show="!selectedNokosProduct"
+                                  class="mt-6 py-8 border-2 border-dashed border-slate-200 dark:border-white/5 rounded-2xl flex flex-col items-center gap-3 text-center"
+                                  x-cloak
+                             >
+                                 <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                                     <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                 </div>
+                                 <div>
+                                     <p class="text-sm font-black text-slate-600 dark:text-slate-300">Belum Ada Platform Dipilih</p>
+                                     <p class="text-xs text-slate-400 mt-1">Pilih dari dropdown di atas atau klik tombol populer</p>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+
+                     <!-- Dynamic Inline Country Picker -->
+                      <div x-show="selectedNokosProduct !== null && !showStatus" 
+                           x-transition:enter="transition ease-out duration-300"
+                           x-transition:enter-start="opacity-0 translate-y-4"
+                           x-transition:enter-end="opacity-100 translate-y-0"
+                           class="bg-white dark:bg-[#12121A] rounded-[2.2rem] p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 shadow-xl space-y-6"
+                           x-cloak
+                      >
+                          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-850/60">
+                              <div>
+                                  <span class="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[9px] font-black bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20 uppercase tracking-widest mb-1.5" x-text="selectedNokosProduct ? selectedNokosProduct.name : ''"></span>
+                                  <h3 class="text-lg font-black text-slate-900 dark:text-white leading-tight">Pilih Negara & Operator Rate</h3>
+                              </div>
+                          </div>
+
+                          <!-- Live Loader -->
+                          <div x-show="loadingCountries" class="py-16 flex flex-col items-center justify-center gap-3">
+                              <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                              <p class="text-xs text-slate-400 font-bold">Menghubungi server virtual number...</p>
+                          </div>
+
+                          <!-- Country Dropdown Selector (Only shown when not loading and we have countries available) -->
+                          <div x-show="!loadingCountries && nokosCountries.length > 0" class="space-y-6">
+                              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 py-4 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-2.5xl border border-slate-150 dark:border-slate-800/80">
+                                  <div class="flex-1 relative" x-data="{ open: false, search: '' }" @click.away="open = false">
+                                      <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Pilih Negara Asal Nomor</label>
+                                      
+                                      <!-- Custom Dropdown Trigger -->
+                                      <div @click="open = !open; search = ''" 
+                                           class="w-full bg-white dark:bg-[#181824] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 flex items-center justify-between cursor-pointer shadow-sm hover:border-blue-500/50 dark:hover:border-blue-500/30 transition-all select-none"
+                                      >
+                                          <div class="flex items-center gap-3">
+                                              <template x-if="selectedCountryName">
+                                                  <div class="flex items-center gap-2.5">
+                                                      <img :src="'https://flagcdn.com/w40/' + getCountryCode(selectedCountryName) + '.png'" 
+                                                           @error="$el.src = 'https://flagcdn.com/w40/un.png'"
+                                                           class="w-5.5 h-4 rounded shadow-sm object-cover shrink-0">
+                                                      <span class="text-xs font-black text-slate-800 dark:text-slate-100" x-text="selectedCountryName"></span>
+                                                  </div>
+                                              </template>
+                                              <template x-if="!selectedCountryName">
+                                                  <span class="text-xs font-bold text-slate-400 dark:text-slate-500">-- Silakan Pilih Negara Asal --</span>
+                                              </template>
+                                          </div>
+                                          
+                                          <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                          </svg>
+                                      </div>
+
+                                      <!-- Custom Dropdown Menu -->
+                                      <div x-show="open" 
+                                           x-transition:enter="transition ease-out duration-150"
+                                           x-transition:enter-start="opacity-0 translate-y-2"
+                                           x-transition:enter-end="opacity-100 translate-y-0"
+                                           class="absolute left-0 right-0 z-50 mt-2 bg-white dark:bg-[#181824] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 space-y-2.5 max-h-[280px] flex flex-col"
+                                           x-cloak
+                                      >
+                                          <!-- Dropdown Search -->
+                                          <div class="relative shrink-0">
+                                              <input type="text" 
+                                                     x-model="search" 
+                                                     placeholder="Cari negara..." 
+                                                     class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 pl-9 text-xs font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-slate-800 dark:text-white placeholder-slate-400"
+                                              >
+                                              <svg class="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                              </svg>
+                                          </div>
+
+                                          <!-- Dropdown List Items -->
+                                          <div class="flex-1 overflow-y-auto pr-1 space-y-1 select-none no-scrollbar">
+                                              <template x-for="c in uniqueNokosCountries.filter(item => item.country_name.toLowerCase().includes(search.toLowerCase()))" :key="c.country_name">
+                                                  <div @click="selectedCountryName = c.country_name; open = false;" 
+                                                       class="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors"
+                                                  >
+                                                      <div class="flex items-center gap-3">
+                                                          <img :src="'https://flagcdn.com/w40/' + getCountryCode(c.country_name) + '.png'" 
+                                                               @error="$el.src = 'https://flagcdn.com/w40/un.png'"
+                                                               class="w-5.5 h-4 rounded shadow-sm object-cover shrink-0">
+                                                          <span class="text-xs font-black text-slate-800 dark:text-slate-100" x-text="c.country_name"></span>
+                                                      </div>
+                                                      
+                                                      <span class="text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full" x-text="c.available + ' Pcs'"></span>
+                                                  </div>
+                                              </template>
+                                              
+                                              <div x-show="uniqueNokosCountries.filter(item => item.country_name.toLowerCase().includes(search.toLowerCase())).length === 0" 
+                                                   class="text-center py-6 text-xs font-bold text-slate-400"
+                                              >
+                                                  Negara tidak ditemukan...
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              <!-- Rate Options Tiers Display (Cheapest, Standard, Premium) -->
+                              <div x-show="selectedCountryName !== ''" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4" x-transition>
+                                  <template x-for="rate in operatorRatesForSelectedCountry" :key="rate.id">
+                                      <div class="relative overflow-hidden bg-slate-50 dark:bg-slate-900 border-2 rounded-[2rem] p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                           :class="rate.type === 'Termurah' 
+                                                     ? 'border-emerald-500/20 dark:border-emerald-500/10 hover:border-emerald-500/60' 
+                                                     : rate.type === 'Tertinggi / Premium' 
+                                                       ? 'border-violet-500/20 dark:border-violet-500/10 hover:border-violet-500/60 shadow-lg shadow-violet-500/5' 
+                                                       : 'border-blue-500/20 dark:border-blue-500/10 hover:border-blue-500/60'"
+                                      >
+                                          <!-- Glow for Premium -->
+                                          <div x-show="rate.type === 'Tertinggi / Premium'" class="absolute top-0 right-0 w-24 h-24 bg-violet-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                                          <!-- Card Header / Badges -->
+                                          <div class="flex items-center justify-between mb-4">
+                                              <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border"
+                                                    :class="rate.type === 'Termurah' 
+                                                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                                                              : rate.type === 'Tertinggi / Premium' 
+                                                                ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 pulse-glow' 
+                                                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'"
+                                                    x-text="rate.type"
+                                              ></span>
+                                              
+                                              <span class="text-xs font-bold text-slate-400 dark:text-slate-500" x-text="'Stok: ' + rate.available + ' pcs'"></span>
+                                          </div>
+
+                                          <!-- Card Info -->
+                                          <div class="mb-5">
+                                              <div class="flex items-center gap-2 mb-1">
+                                                  <span class="text-3xl" x-text="rate.country_emoji"></span>
+                                                  <h4 class="font-black text-slate-900 dark:text-white tracking-tight text-sm" x-text="rate.country_name"></h4>
+                                              </div>
+                                              <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Layanan virtual number dengan stok terverifikasi.</p>
+                                          </div>
+
+                                          <!-- Price & Action Button -->
+                                          <div class="pt-5 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-4 mt-auto">
+                                              <div>
+                                                  <p class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Total Harga</p>
+                                                  <p class="font-black text-base text-slate-900 dark:text-white" x-text="'Rp ' + Number(rate.price).toLocaleString('id-ID')"></p>
+                                              </div>
+                                              
+                                              <button @click="openPaymentModal(rate)"
+                                                      class="py-3 px-5 rounded-xl font-black text-xs transition-all duration-300 active:scale-95 shadow-md flex items-center gap-1.5"
+                                                      :class="rate.type === 'Termurah' 
+                                                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/10 hover:shadow-emerald-500/30' 
+                                                                : rate.type === 'Tertinggi / Premium' 
+                                                                  ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-violet-600/10 hover:shadow-violet-500/30' 
+                                                                  : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-blue-600 dark:hover:bg-blue-600 hover:text-white dark:hover:text-white shadow-black/5 hover:shadow-blue-600/25'"
+                                              >
+                                                  <span>Sewa</span>
+                                                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                                              </button>
+                                          </div>
+                                      </div>
+                                  </template>
+                              </div>
+
+                              <!-- Empty Tier Prompt -->
+                              <div x-show="selectedCountryName === ''" class="text-center py-10 bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-250 dark:border-slate-800">
+                                  <p class="text-xs font-bold text-slate-400">Silakan pilih salah satu negara dari dropdown di atas untuk memuat penawaran harga.</p>
+                              </div>
+                          </div>
+
+                          <!-- Empty country state -->
+                          <div x-show="!loadingCountries && nokosCountries.length === 0" class="text-center py-10">
+                              <p class="text-xs font-bold text-slate-400">Layanan sedang kosong atau tidak tersedia saat ini.</p>
+                          </div>
+                      </div>
+
+                     <!-- Dynamic Inline Active OTP Monitoring Console -->
+                     <div x-show="selectedNokosProduct !== null && showStatus" 
+                          x-transition:enter="transition ease-out duration-500"
+                          x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+                          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                          class="bg-gradient-to-br from-slate-900 via-[#0B101E] to-[#0A0C14] rounded-[2.5rem] p-8 sm:p-10 border border-slate-800 text-white shadow-2xl shadow-blue-900/20 space-y-8 relative overflow-hidden group"
+                          x-cloak
+                     >
+                         <!-- Dynamic glow decorations -->
+                         <div class="absolute -top-32 -left-32 w-64 h-64 bg-blue-600/20 blur-[100px] rounded-full pointer-events-none transition-all duration-1000" :class="otpReceived ? 'bg-emerald-500/20' : 'bg-blue-600/20'"></div>
+                         <div class="absolute bottom-0 right-0 w-64 h-64 bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none"></div>
+
+                         <!-- Header -->
+                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+                             <div class="flex items-center gap-5">
+                                 <div :class="otpReceived ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.3)]' : 'bg-blue-500/20 text-blue-400 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.3)] pulse-glow'" class="w-16 h-16 rounded-[1.25rem] flex items-center justify-center text-3xl border shrink-0 transition-all duration-500">
+                                     <span x-text="otpReceived ? '✅' : '⏳'"></span>
+                                 </div>
+                                 <div>
+                                     <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 text-white rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10 mb-2 backdrop-blur-md shadow-sm">
+                                         <span :class="otpReceived ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-blue-500 animate-ping shadow-[0_0_10px_rgba(59,130,246,0.8)]'" class="w-2 h-2 rounded-full inline-block mr-1"></span>
+                                         <span x-text="otpReceived ? 'OTP Berhasil Diterima' : 'Menunggu Pesan Masuk'"></span>
+                                     </span>
+                                     <h3 class="text-2xl font-black tracking-tight drop-shadow-md" x-text="selectedNokosProduct ? selectedNokosProduct.name : ''"></h3>
+                                 </div>
+                             </div>
+                             
+                             <div class="flex items-center gap-3 relative z-10">
+                                 <button @click="cancelOrder()" x-show="!otpReceived" class="px-5 py-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 hover:border-red-500 rounded-xl font-black text-xs transition-all active:scale-95 shadow-lg shadow-red-500/5">
+                                     Batalkan Sewa
+                                 </button>
+                                 <button @click="resetCheckout()" x-show="otpReceived" class="px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-white rounded-xl font-black text-xs transition-all active:scale-95 shadow-xl shadow-emerald-500/20 flex items-center gap-2">
+                                     <span>Selesai / Sewa Lagi</span>
+                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                                 </button>
+                             </div>
+                         </div>
+
+                         <!-- Monitor values -->
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                             <!-- Number box -->
+                             <div class="bg-[#181C2A]/80 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-white/5 flex flex-col justify-between hover:border-blue-500/30 transition-colors group/card">
+                                 <div>
+                                     <div class="flex items-center justify-between mb-2">
+                                         <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Virtual Phone Number</p>
+                                         <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover/card:text-blue-400 transition-colors">
+                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                         </div>
+                                     </div>
+                                     <h4 class="text-3xl sm:text-4xl font-black tracking-wider text-white font-mono select-all drop-shadow-md" x-text="phoneNumber"></h4>
+                                 </div>
+                                 <div class="flex items-center gap-3 mt-8">
+                                     <button @click="copyPhone()" class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-blue-600/20">
+                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                         <span>Salin Nomor</span>
+                                     </button>
+                                     <a :href="'https://wa.me/' + phoneNumber.replace(/[^0-9]/g, '')" target="_blank" class="w-12 h-12 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white border border-emerald-500/20 hover:border-emerald-500 rounded-xl flex items-center justify-center transition-all active:scale-95" title="Buka WhatsApp">
+                                         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.73.44 3.36 1.21 4.79L2 22l5.37-1.39c1.4.74 2.99 1.16 4.63 1.16 5.52 0 10-4.48 10-10S17.52 2 12.004 2zm5.72 14.15c-.24.68-1.2 1.24-1.65 1.29-.41.05-.95.07-1.54-.12-.36-.12-.83-.28-1.42-.53-2.52-1.07-4.14-3.66-4.26-3.82-.12-.16-1.02-1.37-1.02-2.61s.64-1.85.87-2.1c.24-.24.52-.3.69-.3.17 0 .34 0 .49.01.16.01.37-.06.58.45.21.52.73 1.79.79 1.91.06.12.1.26.02.42-.08.16-.18.26-.29.4-.12.13-.25.3-.36.42-.12.14-.25.29-.1.54.14.24.64 1.07 1.38 1.73.95.85 1.74 1.11 1.99 1.23.25.12.39.1.53-.06.14-.16.6-1.04.76-1.25.16-.21.32-.18.54-.1.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.18 1.26z"/></svg>
+                                     </a>
+                                 </div>
+                             </div>
+                             
+                             <!-- SMS Code box -->
+                             <div class="bg-[#181C2A]/80 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-white/5 flex flex-col justify-between hover:border-emerald-500/30 transition-colors group/card">
+                                 <div>
+                                     <div class="flex items-center justify-between mb-2">
+                                         <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Pesan OTP SMS</p>
+                                         <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover/card:text-emerald-400 transition-colors">
+                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                         </div>
+                                     </div>
+                                     <h4 :class="otpReceived ? 'text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'text-slate-600 font-mono opacity-50'" class="text-4xl sm:text-5xl font-black tracking-widest transition-all duration-500" x-text="otpCode"></h4>
+                                 </div>
+                                 <div class="flex items-center gap-3 mt-8">
+                                     <button @click="copyOtp()" :disabled="!otpReceived" :class="otpReceived ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20 shadow-lg' : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'" class="flex-1 py-3.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 active:scale-95">
+                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                         <span>Salin Kode OTP</span>
+                                     </button>
+                                 </div>
+                             </div>
+                         </div>
+
+                         <!-- Live status block with animated loading bar -->
+                         <div x-show="!otpReceived" class="relative overflow-hidden bg-[#181C2A]/80 border border-blue-500/20 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 z-10">
+                             <div class="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-blue-600/10 to-blue-600/0 progress-animate opacity-50"></div>
+                             
+                             <div class="flex items-center gap-3 relative z-10">
+                                 <div class="dot-pulse flex gap-1">
+                                     <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                     <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                     <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                 </div>
+                                 <span class="text-sm font-bold text-slate-300">Menghubungkan ke gateway untuk mendeteksi SMS OTP...</span>
+                             </div>
+                             
+                             <div class="font-mono text-blue-300 font-bold text-sm bg-blue-950 border border-blue-500/30 py-2 px-4 rounded-xl flex items-center gap-2 shrink-0 relative z-10 shadow-inner">
+                                 <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                 <span id="otp-timer">20:00</span>
+                             </div>
+                         </div>
+                     </div>
+                     </div>
+                     <% } %>
+                     
+                     <!-- Empty State -->
+                 <div x-show="activeTab !== 'all' && !document.querySelectorAll('[x-show*=\'' + activeTab + '\']').length" class="text-center py-20 bg-white dark:bg-[#12121A] rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 mt-10 transition-colors">
+                     <div class="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-3xl mx-auto mb-6 flex items-center justify-center text-slate-400">
+                         <svg class="w-10 h-10 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                     </div>
+                     <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Produk Belum Tersedia 📦</h3>
+                     <p class="text-sm font-bold text-slate-500">Kategori ini sedang dalam pemeliharaan atau stok produk sedang kosong.</p>
+                 </div>
+            </div>
+
+            <!-- Payment Method Modal -->
+            <div x-show="showPaymentModal" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div x-show="showPaymentModal" x-transition.opacity class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showPaymentModal = false"></div>
+                <div x-show="showPaymentModal" x-transition.scale.95 class="relative bg-white dark:bg-[#12121A] w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 z-10">
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Pilih Metode Pembayaran</h3>
+                    <p class="text-xs text-slate-500 mb-6 font-medium">Sewa nomor virtual untuk <span class="font-bold text-slate-800 dark:text-slate-300" x-text="selectedCountryName"></span> seharga <span class="font-bold text-blue-500" x-text="'Rp ' + (selectedRate ? selectedRate.price.toLocaleString('id-ID') : 0)"></span></p>
+                    
+                    <div class="space-y-3">
+                        <button @click="processPayment('balance')" class="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-900/50 transition-all text-left group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">Saldo Akun</h4>
+                                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Potong langsung dari saldo web</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+
+                        <button @click="processPayment('qris')" class="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-900/50 transition-all text-left group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">QRIS PayDisini</h4>
+                                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Bayar instan dengan aplikasi dompet digital</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QRIS Polling Modal -->
+            <div x-show="showQrisModal" style="display: none;" class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                <div x-show="showQrisModal" x-transition.opacity class="absolute inset-0 bg-slate-900/80 backdrop-blur-md"></div>
+                <div x-show="showQrisModal" x-transition.scale.95 class="relative bg-white dark:bg-[#12121A] w-full max-w-sm rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-10 flex flex-col items-center p-8 text-center">
+                    <div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Menunggu Pembayaran</h3>
+                    <p class="text-xs text-slate-500 mb-6 font-medium">Scan kode QR di bawah menggunakan aplikasi e-wallet Anda. Sistem akan otomatis memverifikasi saat LUNAS.</p>
+                    
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6 inline-block">
+                        <template x-if="showQrisModal && qrisString">
+                            <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrisString)" alt="QRIS" class="w-48 h-48 mx-auto" @error="window.uiCore.showToast('Gagal memuat QR Code. Silakan muat ulang.', 'error')">
+                        </template>
+                    </div>
+                    
+                    <p class="text-[10px] text-red-500 font-bold mb-4">*Jangan tutup jendela ini sebelum pembayaran terkonfirmasi.</p>
+                    
+                    <button @click="showQrisModal = false; clearInterval(qrisInterval)" class="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">Batal / Tutup</button>
+                </div>
+            </div>
+        </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true, offset: 40 });
+    </script>
+</body>
+</html>
+
