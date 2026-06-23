@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/output.css?v=2">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    </style>
+    <script>
+        window.uiCore = {
+            toggleTheme: function () {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            },
+            toggleSidebar: function () {
+                const sidebar = document.getElementById('app-sidebar');
+                const overlay = document.getElementById('app-overlay');
+                if(sidebar && overlay) {
+                    sidebar.classList.toggle('-translate-x-full');
+                    overlay.classList.toggle('hidden');
+                    overlay.classList.toggle('opacity-0');
+                }
+            }
+        };
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-slate-800/50 backdrop-blur border-b border-slate-700 flex items-center justify-between px-6">
+            
+            <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-bold">Add Source Code / Script</h1>
+            <a href="/admin/products" class="text-slate-400 hover:text-white transition-colors">Cancel</a>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="max-w-2xl bg-slate-800 rounded-2xl border border-slate-700 p-8 shadow-xl">
+                <form action="/admin/products" method="POST" class="space-y-6">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="type" value="script">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Script Name</label>
+                        <input type="text" name="name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g. Bot Store V1">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Category</label>
+                        <select name="category" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                            <% categories.filter(c => c.type === 'script').forEach(cat => { %>
+                                <option value="<%= cat.id %>"><%= cat.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Price (Rp)</label>
+                        <input type="number" name="price" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Download Link</label>
+                        <p class="text-xs text-slate-500 mb-2">Link to Google Drive, Mediafire, or Mega.nz</p>
+                        <input type="url" name="downloadUrl" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="https://...">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Digital Instructions (Optional)</label>
+                        <textarea name="digitalInstructions" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="How to use the script..."></textarea>
+                    </div>
+
+                    <div>
+                        <%- include('../../partials/logo-picker') %>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Custom SVG / Icon Code (Optional)</label>
+                        <textarea name="iconSVG" rows="3" placeholder='<svg ...>...</svg>' class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono text-xs"></textarea>
+                        <p class="text-[10px] text-slate-400 mt-1">Paste your SVG code or Lucide icon HTML here. Leave empty for smart auto-detect.</p>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
+                            Save Script Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+
+
