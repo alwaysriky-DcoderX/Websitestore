@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <%- include('../partials/head') %>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-blue-200 dark:selection:bg-blue-800 transition-colors duration-300">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white/90 dark:bg-[#0D0D14]/90 backdrop-blur-2xl border-b border-slate-200/60 dark:border-white/5 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center gap-2.5">
+                    <img src="<%= settings.web_logo %>" alt="" class="w-8 h-8 object-contain rounded-xl">
+                    <span class="text-[15px] font-black text-slate-900 dark:text-white hidden sm:block"><%= settings.web_name %></span>
+                </a>
+                <div class="flex items-center gap-2">
+                    <button onclick="uiCore.toggleTheme()" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
+                        <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    </button>
+                    <a href="/marketplace" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all">Marketplace</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- Main Header -->
+    <div class="relative overflow-hidden bg-white dark:bg-[#12121A] border-b border-slate-200 dark:border-slate-800 transition-colors py-16">
+        <div class="absolute inset-0 opacity-30 dark:opacity-10 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
+            <span class="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-black bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-600/20 mb-4 tracking-wider uppercase">Legal & Compliance</span>
+            <h1 class="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight mb-4">Syarat & Ketentuan Layanan</h1>
+            <p class="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto font-medium">Harap baca seluruh aturan layanan kami secara seksama sebelum menggunakan server, script, maupun layanan lainnya.</p>
+        </div>
+    </div>
+
+    <!-- Layout Grid -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex flex-col lg:flex-row gap-12 relative" x-data="{ activeSection: 'usage' }">
+        
+        <!-- Sticky Navigation Index -->
+        <aside class="w-full lg:w-64 lg:flex-shrink-0 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)]">
+            <div class="bg-white dark:bg-[#12121A] border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm space-y-4 transition-colors">
+                <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Daftar Isi</h4>
+                <ul class="space-y-1 text-sm font-bold">
+                    <li>
+                        <a href="#usage" @click="activeSection = 'usage'" 
+                           class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                           :class="activeSection === 'usage' ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            <span>Ketentuan Penggunaan</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#prohibited" @click="activeSection = 'prohibited'" 
+                           class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                           :class="activeSection === 'prohibited' ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <span>Larangan Keras</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#refund" @click="activeSection = 'refund'" 
+                           class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                           :class="activeSection === 'refund' ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Kebijakan Refund</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#liability" @click="activeSection = 'liability'" 
+                           class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                           :class="activeSection === 'liability' ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Tanggung Jawab</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#modifications" @click="activeSection = 'modifications'" 
+                           class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                           :class="activeSection === 'modifications' ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17.5M12 8v4l3 3"></path></svg>
+                            <span>Perubahan Ketentuan</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 space-y-12 max-w-4xl">
+
+            <!-- Ketentuan Penggunaan -->
+            <section id="usage" class="bg-white dark:bg-[#12121A] border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm transition-colors scroll-mt-24">
+                <div class="flex items-center gap-3.5 mb-6">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">1. Ketentuan Penggunaan Umum</h2>
+                </div>
+                <div class="space-y-4 text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                    <p>Dengan membuat pesanan atau mengakses layanan di website <%= settings.web_name %>, Anda menyatakan tunduk pada seluruh aturan yang berlaku di sini. Anda bertanggung jawab penuh atas segala aktivitas akun Anda dan keamanan data panel yang diberikan.</p>
+                    <ul class="list-disc pl-5 space-y-2 text-sm">
+                        <li>Layanan hanya boleh digunakan untuk tujuan legal yang sesuai hukum di Republik Indonesia.</li>
+                        <li>Anda wajib menggunakan data kontak yang valid (seperti Email aktif) saat mendaftar atau bertransaksi demi kelancaran pengiriman akun.</li>
+                        <li>Satu akun hanya boleh digunakan oleh satu pengguna sah. Dilarang keras memperjualbelikan akses akun dashboard Anda.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Larangan Keras -->
+            <section id="prohibited" class="bg-white dark:bg-[#12121A] border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm transition-colors scroll-mt-24">
+                <div class="flex items-center gap-3.5 mb-6">
+                    <div class="w-12 h-12 bg-red-100 dark:bg-red-600/20 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">2. Larangan Keras & Penyalahgunaan</h2>
+                </div>
+                <div class="space-y-4 text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                    <p class="text-red-600 dark:text-red-400 font-bold">Layanan kami dirancang untuk performa tinggi dan kredibilitas bersama. Pelanggaran terhadap poin larangan di bawah ini akan menyebabkan **PENGHENTIAN LAYANAN INSTAN TANPA REFUND**:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 dark:bg-[#1C1C24] p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 transition-colors">
+                            <h4 class="text-sm font-black text-slate-900 dark:text-white mb-1">🚫 No DDoS / Botnet</h4>
+                            <p class="text-xs text-slate-500">Dilarang keras meluncurkan serangan siber atau scanning IP port lain.</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-[#1C1C24] p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 transition-colors">
+                            <h4 class="text-sm font-black text-slate-900 dark:text-white mb-1">🚫 No Mining Crypto</h4>
+                            <p class="text-xs text-slate-500">Dilarang menambang Bitcoin, Monero, atau koin kripto apa pun di CPU server kami.</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-[#1C1C24] p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 transition-colors">
+                            <h4 class="text-sm font-black text-slate-900 dark:text-white mb-1">🚫 No Phishing / Carding</h4>
+                            <p class="text-xs text-slate-500">Dilarang menyebarkan halaman login palsu atau transaksi keuangan ilegal.</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-[#1C1C24] p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 transition-colors">
+                            <h4 class="text-sm font-black text-slate-900 dark:text-white mb-1">🚫 No Pornography & SARA</h4>
+                            <p class="text-xs text-slate-500">Dilarang menyimpan atau mendistribusikan materi pornografi dan SARA.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Kebijakan Refund -->
+            <section id="refund" class="bg-white dark:bg-[#12121A] border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm transition-colors scroll-mt-24">
+                <div class="flex items-center gap-3.5 mb-6">
+                    <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">3. Kebijakan Refund & Pengembalian Uang</h2>
+                </div>
+                <div class="space-y-4 text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                    <p>Kami berkomitmen untuk menyediakan kualitas server terbaik. Namun demikian, refund tunduk pada aturan ketat berikut:</p>
+                    <ul class="list-disc pl-5 space-y-2 text-sm">
+                        <li>Refund saldo / uang tunai hanya dapat diajukan jika **server mengalami down-time total yang disebabkan oleh infrastruktur utama kami lebih dari 24 jam berturut-turut** dan tidak dapat diselesaikan oleh tim dukungan kami.</li>
+                        <li>Pengajuan refund tidak berlaku untuk kesalahan konfigurasi, kesalahan pilihan tipe produk oleh pengguna, atau script internal aplikasi pengguna yang error.</li>
+                        <li>Segala bentuk penyalahgunaan (seperti pelanggaran Bab 2) secara otomatis membatalkan hak pengajuan refund dalam bentuk apa pun.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Tanggung Jawab -->
+            <section id="liability" class="bg-white dark:bg-[#12121A] border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm transition-colors scroll-mt-24">
+                <div class="flex items-center gap-3.5 mb-6">
+                    <div class="w-12 h-12 bg-amber-100 dark:bg-amber-600/20 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">4. Batasan Tanggung Jawab (Disclaimer)</h2>
+                </div>
+                <div class="space-y-4 text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                    <p><%= settings.web_name %> tidak bertanggung jawab atas hilangnya data, gangguan operasional, atau kerugian finansial yang diakibatkan oleh:</p>
+                    <ul class="list-disc pl-5 space-y-2 text-sm">
+                        <li>Kelalaian Anda dalam menyimpan kata sandi (password) panel server Anda sendiri.</li>
+                        <li>Serangan DDoS eksternal yang ditujukan ke server spesifik Anda (disarankan untuk menggunakan proxy Cloudflare untuk perlindungan domain).</li>
+                        <li>Kejadian di luar kendali kemanusiaan (Force Majeure) seperti kebakaran data center pusat, bencana alam nasional, atau pemadaman internet fiber laut global.</li>
+                    </ul>
+                    <div class="p-4 bg-amber-50 dark:bg-amber-600/10 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-600/20 rounded-2xl text-xs font-bold transition-colors">
+                        ⚠️ PENTING: Lakukan backup data Anda secara mandiri secara berkala. Kami tidak melayani restore data individual jika server sengaja/tidak sengaja Anda format sendiri.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Perubahan Ketentuan -->
+            <section id="modifications" class="bg-white dark:bg-[#12121A] border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm transition-colors scroll-mt-24">
+                <div class="flex items-center gap-3.5 mb-6">
+                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-600/20 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17.5M12 8v4l3 3"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">5. Perubahan Syarat & Ketentuan</h2>
+                </div>
+                <div class="space-y-4 text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                    <p>Aturan ini dapat diubah atau diperbarui sewaktu-waktu oleh manajemen <%= settings.web_name %> tanpa pemberitahuan tertulis sebelumnya demi menyesuaikan regulasi hukum siber yang berlaku. Anda sangat dianjurkan untuk meninjau halaman ini secara berkala.</p>
+                    <p class="text-sm">Terakhir diperbarui: 17 Mei 2026</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ScrollSpy & Alpine.js Navigation Setup -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true, offset: 40 });
+
+        // Scrollspy with Intersection Observer to synchronize sidebar active states
+        (function() {
+            const sections = document.querySelectorAll('section[id]');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const alpineRoot = document.querySelector('[x-data]');
+                        if (alpineRoot && alpineRoot.__x) {
+                            alpineRoot.__x.$data.activeSection = entry.target.id;
+                        }
+                    }
+                });
+            }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+            sections.forEach(section => observer.observe(section));
+        })();
+    </script>
+</body>
+</html>
