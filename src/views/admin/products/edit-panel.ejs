@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-white/50 dark:bg-slate-800/50 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 transition-colors">
+            
+            <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white">Add Panel Product</h1>
+            <a href="/admin/products" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">Cancel</a>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="max-w-3xl bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-xl">
+                <form action="/admin/products/edit/panel/<%= product.id %>" method="POST" class="space-y-6">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="type" value="panel">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Product Name</label>
+                            <input type="text" name="name" required value="<%= product.name %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Category</label>
+                            <select name="category" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                                <% categories.filter(c => c.type === 'pterodactyl').forEach(cat => { %>
+                                    <option value="<%= cat.id %>"><%= cat.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Product Price (Rp)</label>
+                        <input type="number" name="price" required value="<%= product.price %>" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+
+                    <div>
+                        <%- include('../../partials/logo-picker') %>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Custom SVG / Icon Code (Optional)</label>
+                        <textarea name="iconSVG" rows="3" placeholder='<svg ...>...</svg>' class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono text-xs"><%= product.iconSVG || "" %></textarea>
+                        <p class="text-[10px] text-slate-400 mt-1">Paste your SVG code or Lucide icon HTML here. Leave empty for smart auto-detect.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Product Notes / Catatan (Optional)</label>
+                        <textarea name="description" rows="4" placeholder="Enter special product instructions or notes for this panel..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"><%= product.description || "" %></textarea>
+                        <p class="text-[10px] text-slate-400 mt-1">This text will be shown on the product card and in the buyer's order details page once created.</p>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-100 dark:border-slate-700">
+                        <h2 class="text-sm font-black text-blue-500 uppercase tracking-widest mb-6">Pterodactyl Configuration</h2>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Select Node</label>
+                                <select name="pteroNode" id="pteroNode" required onchange="updatePteroFields()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                                <option value="">-- Select Node --</option>
+                                <% nodes.forEach(node => { %>
+                                    <option value="<%= node.id %>" data-locid="<%= node.locationId %>" data-eggid="<%= node.eggId %>" data-nestid="<%= node.nestId %>">
+                                        <%= node.name %> [<%= node.location || 'ID' %>]
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <div class="hidden">
+                            <input type="number" name="pteroLocationId" id="pteroLocationId" value="<%= product.pteroLocationId || '' %>">
+                            <input type="number" name="pteroEggId" id="pteroEggId" value="<%= product.pteroEggId || '' %>">
+                            <input type="number" name="pteroNestId" id="pteroNestId" value="<%= product.pteroNestId || '' %>">
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">RAM (MB)</label>
+                                <input type="number" name="pteroMemory" value="<%= product.pteroMemory || 0 %>" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">DISK (MB)</label>
+                                <input type="number" name="pteroDisk" value="<%= product.pteroDisk || 0 %>" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">CPU (%)</label>
+                                <input type="number" name="pteroCpu" value="<%= product.pteroCpu || 0 %>" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">THREADS</label>
+                                <input type="text" name="pteroThreads" value="<%= product.pteroThreads || '' %>" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
+                            Save Panel Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function updatePteroFields() {
+            const selector = document.getElementById('pteroNode');
+            const selected = selector.options[selector.selectedIndex];
+            
+            if (selected && selected.value) {
+                document.getElementById('pteroLocationId').value = selected.dataset.locid || '';
+                document.getElementById('pteroEggId').value = selected.dataset.eggid || '';
+                document.getElementById('pteroNestId').value = selected.dataset.nestid || '';
+            } else {
+                document.getElementById('pteroLocationId').value = '';
+                document.getElementById('pteroEggId').value = '';
+                document.getElementById('pteroNestId').value = '';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
