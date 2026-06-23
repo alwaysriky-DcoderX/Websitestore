@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+</head>
+<body  class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased min-h-screen">
+
+    <%- include('../partials/dashboard-navbar') %>
+    <%- include('../partials/user-sidebar') %>
+
+    <main class="pt-16 min-h-screen flex flex-col w-full transition-all duration-300">
+        <div class="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-2xl mx-auto text-center">
+            
+            <div class="mb-10" data-aos="fade-down">
+                <h1 class="text-3xl font-black text-slate-900 dark:text-white">Complete Payment</h1>
+                <p class="text-sm font-bold text-slate-500 mt-2">Scan QRIS untuk menyelesaikan pesanan Anda.</p>
+            </div>
+
+            <div class="bg-white dark:bg-[#12121A] rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl p-8 md:p-12" data-aos="zoom-in">
+                
+                <div class="mb-10">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Amount</p>
+                    <div class="text-4xl font-black text-blue-600 dark:text-blue-400 mb-4">Rp <%= order.amount.toLocaleString('id-ID') %></div>
+                    
+                    <div class="max-w-xs mx-auto">
+                        <div class="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-2">
+                            <div id="countdown-bar" class="h-full bg-blue-500 transition-all duration-1000" style="width: 100%"></div>
+                        </div>
+                        <p class="text-[10px] font-black text-slate-400">EXPIRES IN: <span id="countdown-text" class="text-blue-500">--:--</span></p>
+                    </div>
+                </div>
+
+                <!-- QR Code Display -->
+                <div class="relative inline-block p-6 bg-white rounded-[2rem] shadow-inner mb-10 group">
+                    <div id="qrcode" class="w-64 h-64 mx-auto"></div>
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/40 backdrop-blur-[2px] rounded-[2rem]">
+                         <button onclick="navigator.clipboard.writeText('<%= qrString %>'); uiCore.showToast('Copied raw QR string', 'success')" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-black shadow-xl">Copy Raw QR</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4 max-w-sm mx-auto">
+                    <div class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
+                        <div class="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <p class="text-xs font-bold text-slate-600 dark:text-slate-400">Scan menggunakan aplikasi Gojek, OVO, Dana, ShopeePay, atau Mobile Banking.</p>
+                    </div>
+                    
+                    <div class="animate-pulse flex items-center justify-center gap-2 text-xs font-black text-blue-600 dark:text-blue-400">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        MENUNGGU PEMBAYARAN...
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <button onclick="cancelOrder()" class="text-sm font-black text-red-500 hover:text-red-600 transition-colors flex items-center gap-2 mx-auto">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    Batalkan Transaksi
+                </button>
+                <a href="/dashboard" class="block text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors">Bayar Nanti? Kembali ke Dashboard</a>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init();
+        const qrData = <%- JSON.stringify(qrString) %>;
+        if (qrData) {
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrData,
+                width: 256,
+                height: 256,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        } else {
+            document.getElementById("qrcode").innerHTML = '<div class="flex flex-col items-center justify-center h-full text-red-500 font-bold"><svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>QRIS Data Missing</div>';
+        }
+
+        async function cancelOrder() {
+            if(!confirm('Apakah Anda yakin ingin membatalkan pesanan ini?')) return;
+            try {
+                const res = await fetch('/api/order/cancel/<%= order.id %>', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if(data.success) {
+                    uiCore.showToast('Pesanan dibatalkan', 'success');
+                    window.location.href = '/dashboard/marketplace';
+                } else {
+                    uiCore.showToast(data.error || 'Gagal membatalkan pesanan', 'error');
+                }
+            } catch(e) {
+                uiCore.showToast('Server error', 'error');
+            }
+        }
+
+        // Countdown logic
+        const expiredAt = new Date("<%= order.data.expiredAt %>").getTime();
+        const createdAt = new Date("<%= order.createdAt %>").getTime();
+        const totalDuration = expiredAt - createdAt;
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = expiredAt - now;
+
+            if (distance < 0) {
+                document.getElementById("countdown-text").innerHTML = "EXPIRED";
+                document.getElementById("countdown-bar").style.width = "0%";
+                return;
+            }
+
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById("countdown-text").innerHTML = 
+                (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+                (seconds < 10 ? "0" + seconds : seconds);
+
+            const percentage = Math.max(0, (distance / totalDuration) * 100);
+            document.getElementById("countdown-bar").style.width = percentage + "%";
+        }
+        
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        // Polling status
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/order/<%= order.id %>');
+                const data = await res.json();
+                if(data.success && data.order.status === 'completed') {
+                    window.location.href = '/dashboard/orders/<%= order.id %>?success=true';
+                }
+            } catch(e) {}
+        }, 5000);
+    </script>
+</body>
+</html>
