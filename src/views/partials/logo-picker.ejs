@@ -1,0 +1,58 @@
+<% 
+    const logoLibrary = [
+        { name: 'Netflix', path: '/img/logos/netflix.png' },
+        { name: 'Spotify', path: '/img/logos/spotify.png' },
+        { name: 'Disney+', path: '/img/logos/disney.png' },
+        { name: 'Canva', path: '/img/logos/canva.png' },
+        { name: 'YouTube', path: '/img/logos/youtube.png' },
+        { name: 'ChatGPT', path: '/img/logos/chatgpt.png' },
+        { name: 'Node.js', path: '/img/logos/nodejs.png' },
+        { name: 'Python', path: '/img/logos/python.png' },
+        { name: 'PHP', path: '/img/logos/php.png' },
+        { name: 'Linux', path: '/img/logos/linux.png' },
+        { name: 'Debian', path: '/img/logos/debian.png' },
+        { name: 'Windows', path: '/img/logos/microsoft.png' },
+        { name: 'WhatsApp', path: '/img/logos/whatsapp.png' },
+        { name: 'Telegram', path: '/img/logos/telegram.png' },
+        { name: 'Discord', path: '/img/logos/discord.png' },
+        { name: 'GitHub', path: '/img/logos/github.png' },
+        { name: 'Docker', path: '/img/logos/docker.png' },
+        { name: 'Google', path: '/img/logos/google.png' },
+        { name: 'AWS', path: '/img/logos/aws.png' }
+    ];
+%>
+
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <label class="block text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Official Photo Library</label>
+        <span class="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg">High-Res PNG Assets</span>
+    </div>
+    
+    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3 bg-white dark:bg-slate-900/50 p-3 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-y-auto max-h-80 no-scrollbar">
+        <% logoLibrary.forEach(logo => { %>
+            <button type="button" 
+                    onclick="selectLogoImage(`<%= logo.path %>`)"
+                    class="group flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl sm:rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-600/10 hover:shadow-xl hover:shadow-emerald-600/5 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all active:scale-90 duration-300">
+                <div class="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center overflow-hidden">
+                    <img src="<%= logo.path %>" alt="<%= logo.name %>" class="w-full h-full object-contain group-hover:scale-125 transition-transform duration-500 ease-out">
+                </div>
+                <span class="text-[7px] sm:text-[8px] font-black uppercase text-slate-400 group-hover:text-emerald-600 transition-colors tracking-tighter text-center line-clamp-1"><%= logo.name %></span>
+            </button>
+        <% }) %>
+    </div>
+    
+</div>
+
+<script>
+    function selectLogoImage(path) {
+        const textarea = document.querySelector('textarea[name="iconSVG"]');
+        if (textarea) {
+            // We use <img> tag instead of SVG paths for perfect realism
+            const imgHtml = `<img src="${path}" class="w-20 h-20 object-contain mx-auto">`;
+            textarea.value = imgHtml;
+            textarea.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20');
+            setTimeout(() => textarea.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20'), 1500);
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+</script>
