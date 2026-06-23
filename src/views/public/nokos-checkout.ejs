@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/output.css?v=2">
+
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        .toast-container { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; color: white; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3); transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); max-width: 360px; }
+        .toast.show { transform: translateX(0); }
+        .toast-success { background: #10b981; }
+        .toast-error { background: #ef4444; }
+        .toast-info { background: #3b82f6; }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+        }
+        .pulse-glow {
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+        @keyframes progressBar {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        .progress-animate {
+            animation: progressBar 10s linear infinite;
+        }
+        @keyframes dotPulse {
+            0%, 80%, 100% { transform: scale(0); opacity: 0; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        .dot-pulse span:nth-child(1) { animation: dotPulse 1.4s 0s infinite; }
+        .dot-pulse span:nth-child(2) { animation: dotPulse 1.4s 0.2s infinite; }
+        .dot-pulse span:nth-child(3) { animation: dotPulse 1.4s 0.4s infinite; }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.08) 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+        }
+        /* Custom thin scrollbar for country card grids */
+        .scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 4px;
+        }
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.4);
+        }
+    </style>
+    <script>
+        window.uiCore = {
+            toggleTheme: function () {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            },
+            showToast: function(message, type = 'info') {
+                const container = document.getElementById('toast-container') || (() => {
+                    const c = document.createElement('div');
+                    c.id = 'toast-container';
+                    c.className = 'toast-container';
+                    document.body.appendChild(c);
+                    return c;
+                })();
+                const toast = document.createElement('div');
+                toast.className = 'toast toast-' + type;
+                toast.textContent = message;
+                container.appendChild(toast);
+                requestAnimationFrame(() => { requestAnimationFrame(() => { toast.classList.add('show'); }); });
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 400);
+                }, 4000);
+            }
+        };
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased" x-data="nokosApp()">
+
+    <%- include('../partials/dashboard-navbar') %>
+    <%- include('../partials/user-sidebar') %>
+
+    <main class="pt-16 min-h-screen flex flex-col w-full transition-all duration-300">
+        <div class="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-5xl mx-auto space-y-6 sm:space-y-8">
+            <!-- Main Panel Container -->
+            <div data-aos="fade-up" class="bg-white dark:bg-[#12121A] rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 shadow-xl">
+
+            <!-- Selection View (Only shown when NO order is active/monitoring) -->
+            <div x-show="!showStatus">
+                <!-- Header -->
+                <div class="flex items-center gap-4 sm:gap-6 mb-8 pb-8 border-b border-slate-100 dark:border-slate-800/60">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <% if (service.service_name.toLowerCase().includes('whatsapp')) { %>
+                            <!-- WhatsApp SVG -->
+                            <svg class="w-10 h-10 text-[#25D366]" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.73.44 3.36 1.21 4.79L2 22l5.37-1.39c1.4.74 2.99 1.16 4.63 1.16 5.52 0 10-4.48 10-10S17.52 2 12.004 2zm5.72 14.15c-.24.68-1.2 1.24-1.65 1.29-.41.05-.95.07-1.54-.12-.36-.12-.83-.28-1.42-.53-2.52-1.07-4.14-3.66-4.26-3.82-.12-.16-1.02-1.37-1.02-2.61s.64-1.85.87-2.1c.24-.24.52-.3.69-.3.17 0 .34 0 .49.01.16.01.37-.06.58.45.21.52.73 1.79.79 1.91.06.12.1.26.02.42-.08.16-.18.26-.29.4-.12.13-.25.3-.36.42-.12.14-.25.29-.1.54.14.24.64 1.07 1.38 1.73.95.85 1.74 1.11 1.99 1.23.25.12.39.1.53-.06.14-.16.6-1.04.76-1.25.16-.21.32-.18.54-.1.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.18 1.26z"/>
+                            </svg>
+                        <% } else if (service.service_name.toLowerCase().includes('telegram')) { %>
+                            <!-- Telegram SVG -->
+                            <svg class="w-10 h-10 text-[#0088cc]" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.12.89-.52 3.24-.73 4.37-.09.48-.27.64-.44.66-.37.03-.65-.25-.97-.46-.5-.33-.78-.53-1.26-.85-.56-.37-.2-.58.12-.91.08-.09 1.54-1.41 1.57-1.54.01-.02.01-.1-.04-.15-.05-.05-.12-.03-.17-.02-.07.01-1.22.77-3.44 2.27-.33.22-.62.33-.88.33-.29-.01-.84-.17-1.25-.3-.5-.17-.9-.26-.86-.55.02-.15.22-.3.6-.46 2.34-1.02 3.9-1.7 4.67-2.03 2.23-.93 2.69-1.09 2.99-1.1.07 0 .22.02.32.1.08.07.11.16.12.23 0 .04.01.12 0 .19z"/>
+                            </svg>
+                        <% } else if (service.service_name.toLowerCase().includes('google')) { %>
+                            <!-- Google SVG -->
+                            <svg class="w-9 h-9" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                        <% } else { %>
+                            <!-- Generic SIM SVG -->
+                            <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        <% } %>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Virtual Number <%= service.service_name %></h1>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium mt-1">Pilih negara untuk mulai menyewa nomor virtual sekali pakai secara instan.</p>
+                    </div>
+                </div>
+
+                <!-- Country Dropdown Selector -->
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 py-4 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-2.5xl border border-slate-150 dark:border-slate-800/80">
+                        <div class="flex-1 relative" x-data="{ open: false, search: '' }" @click.away="open = false">
+                            <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Pilih Negara Asal Nomor</label>
+                            
+                            <!-- Custom Dropdown Trigger -->
+                            <div @click="open = !open; search = ''" 
+                                 class="w-full bg-white dark:bg-[#181824] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 flex items-center justify-between cursor-pointer shadow-sm hover:border-purple-500/50 dark:hover:border-purple-500/30 transition-all select-none"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <template x-if="selectedCountryName">
+                                        <div class="flex items-center gap-2.5">
+                                            <img :src="'https://flagcdn.com/w40/' + getCountryCode(selectedCountryName) + '.png'" 
+                                                 @error="$el.src = 'https://flagcdn.com/w40/un.png'"
+                                                 class="w-5.5 h-4 rounded shadow-sm object-cover shrink-0">
+                                            <span class="text-xs font-black text-slate-800 dark:text-slate-100" x-text="selectedCountryName"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="!selectedCountryName">
+                                        <span class="text-xs font-bold text-slate-400 dark:text-slate-500">-- Silakan Pilih Negara Asal --</span>
+                                    </template>
+                                </div>
+                                
+                                <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+
+                            <!-- Custom Dropdown Menu -->
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-150"
+                                 x-transition:enter-start="opacity-0 translate-y-2"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="absolute left-0 right-0 z-50 mt-2 bg-white dark:bg-[#181824] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 space-y-2.5 max-h-[280px] flex flex-col"
+                                 x-cloak
+                            >
+                                <!-- Dropdown Search -->
+                                <div class="relative shrink-0">
+                                    <input type="text" 
+                                           x-model="search" 
+                                           placeholder="Cari negara..." 
+                                           class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 pl-9 text-xs font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-slate-800 dark:text-white placeholder-slate-400"
+                                    >
+                                    <svg class="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+
+                                <!-- Dropdown List Items -->
+                                <div class="flex-1 overflow-y-auto pr-1 space-y-1 select-none no-scrollbar">
+                                    <template x-for="c in uniqueCountries.filter(item => item.country_name.toLowerCase().includes(search.toLowerCase()))" :key="c.country_name">
+                                        <div @click="selectedCountryName = c.country_name; open = false;" 
+                                             class="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors"
+                                        >
+                                            <div class="flex items-center gap-3">
+                                                <img :src="'https://flagcdn.com/w40/' + getCountryCode(c.country_name) + '.png'" 
+                                                     @error="$el.src = 'https://flagcdn.com/w40/un.png'"
+                                                     class="w-5.5 h-4 rounded shadow-sm object-cover shrink-0">
+                                                <span class="text-xs font-black text-slate-800 dark:text-slate-100" x-text="c.country_name"></span>
+                                            </div>
+                                            
+                                            <span class="text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full" x-text="c.available + ' Pcs'"></span>
+                                        </div>
+                                    </template>
+                                    
+                                    <div x-show="uniqueCountries.filter(item => item.country_name.toLowerCase().includes(search.toLowerCase())).length === 0" 
+                                         class="text-center py-6 text-xs font-bold text-slate-400"
+                                    >
+                                        Negara tidak ditemukan...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rate Options Tiers Display (Cheapest, Standard, Premium) -->
+                    <div x-show="selectedCountryName !== ''" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4" x-transition>
+                        <template x-for="rate in operatorRates" :key="rate.id">
+                            <div class="relative overflow-hidden bg-slate-50 dark:bg-slate-900 border-2 rounded-[2rem] p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                 :class="rate.type === 'Termurah' 
+                                           ? 'border-emerald-500/20 dark:border-emerald-500/10 hover:border-emerald-500/60' 
+                                           : rate.type === 'Tertinggi / Premium' 
+                                             ? 'border-purple-500/20 dark:border-purple-500/10 hover:border-purple-500/60 shadow-lg shadow-purple-500/5' 
+                                             : 'border-blue-500/20 dark:border-blue-500/10 hover:border-blue-500/60'"
+                            >
+                                <!-- Glow for Premium -->
+                                <div x-show="rate.type === 'Tertinggi / Premium'" class="absolute top-0 right-0 w-24 h-24 bg-purple-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                                <!-- Card Header / Badges -->
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border"
+                                          :class="rate.type === 'Termurah' 
+                                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                                                    : rate.type === 'Tertinggi / Premium' 
+                                                      ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 pulse-glow' 
+                                                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'"
+                                          x-text="rate.type"
+                                    ></span>
+                                    
+                                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500" x-text="'Stok: ' + rate.available + ' pcs'"></span>
+                                </div>
+
+                                <!-- Card Info -->
+                                <div class="mb-5">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-3xl" x-text="rate.country_emoji"></span>
+                                        <h4 class="font-black text-slate-900 dark:text-white tracking-tight text-sm" x-text="rate.country_name"></h4>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Layanan virtual number dengan stok terverifikasi.</p>
+                                </div>
+
+                                <!-- Price & Action Button -->
+                                <div class="pt-5 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-4 mt-auto">
+                                    <div>
+                                        <p class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Total Harga</p>
+                                        <p class="font-black text-base text-slate-900 dark:text-white" x-text="'Rp ' + Number(rate.price).toLocaleString('id-ID')"></p>
+                                    </div>
+                                    
+                                    <button @click="openPaymentModal(rate)" :disabled="loading"
+                                            class="py-3 px-5 rounded-xl font-black text-xs transition-all duration-300 active:scale-95 shadow-md flex items-center gap-1.5"
+                                            :class="rate.type === 'Termurah' 
+                                                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/10 hover:shadow-emerald-500/30' 
+                                                      : rate.type === 'Tertinggi / Premium' 
+                                                        ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/10 hover:shadow-purple-500/30' 
+                                                        : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-blue-600 dark:hover:bg-blue-600 hover:text-white dark:hover:text-white shadow-black/5 hover:shadow-blue-600/25'"
+                                    >
+                                        <span>Sewa</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Empty Tier Prompt -->
+                    <div x-show="selectedCountryName === ''" class="text-center py-10 bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-250 dark:border-slate-800">
+                        <p class="text-xs font-bold text-slate-400">Silakan pilih salah satu negara dari dropdown di atas untuk memuat penawaran harga.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Status Card (Alpine.js transition) -->
+            <div x-show="showStatus" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-4 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" 
+                 class="max-w-md mx-auto bg-slate-900 dark:bg-[#0a0a12] text-white rounded-3xl p-6 sm:p-8 space-y-6 relative overflow-hidden shadow-2xl border border-purple-500/20 pulse-glow" style="display: none;">
+
+                <!-- Decorative glow -->
+                <div class="absolute top-0 right-0 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <!-- Header inside monitor -->
+                <div class="text-center pb-4 border-b border-white/10">
+                    <div class="w-12 h-12 bg-purple-500/20 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-xl">⚡</div>
+                    <h2 class="text-lg font-black tracking-tight text-white">Sewa Nomor Aktif</h2>
+                    <p class="text-slate-400 text-xs mt-1">Salin nomor di bawah ini dan kirimkan SMS OTP dari platform.</p>
+                </div>
+
+                <div class="relative text-center">
+                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Virtual Phone Number</p>
+                    <div class="flex items-center justify-center gap-2">
+                        <h2 class="text-2xl sm:text-3xl font-black text-purple-400 tracking-tight" x-text="phoneNumber"></h2>
+                        <button @click="copyPhone()" class="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-all duration-200 active:scale-90" title="Salin nomor">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative bg-white/5 rounded-2xl p-6 border border-white/10 text-center">
+                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">Menunggu SMS OTP</p>
+
+                    <!-- OTP Display -->
+                    <div class="flex items-center justify-center gap-2">
+                        <div id="otpDisplay" class="text-3.5xl sm:text-4xl font-black tracking-[0.5rem] text-white transition-colors duration-500" :class="otpReceived ? 'text-green-400' : ''" x-text="otpCode"></div>
+                        <template x-if="otpReceived">
+                            <button @click="copyOtp()" class="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-green-400 transition-all duration-200 active:scale-90" title="Salin OTP">
+                                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Monitoring progress indicator -->
+                    <div class="mt-6">
+                        <template x-if="!otpReceived">
+                            <div>
+                                <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-3">
+                                    <div class="progress-animate h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"></div>
+                                </div>
+                                <div class="flex items-center justify-center gap-2">
+                                    <div class="dot-pulse flex items-center gap-1">
+                                        <span class="w-2 h-2 bg-purple-500 rounded-full inline-block"></span>
+                                        <span class="w-2 h-2 bg-purple-500 rounded-full inline-block"></span>
+                                        <span class="w-2 h-2 bg-purple-500 rounded-full inline-block"></span>
+                                    </div>
+                                    <span class="text-xs text-purple-300 font-bold">Memonitor SMS Masuk...</span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="otpReceived">
+                            <div class="flex items-center justify-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full pulse-glow"></div>
+                                <span class="text-xs text-green-400 font-bold">OTP Berhasil Diterima!</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex justify-center gap-3">
+                    <button @click="resetCheckout()" class="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                        </svg>
+                        <span>Kembali ke Daftar</span>
+                    </button>
+                </div>
+
+                <p class="text-[10px] text-slate-500 text-center leading-relaxed">Jika SMS tidak masuk dalam 5 menit, silakan kembali. Saldo Anda akan dikembalikan secara otomatis jika sewa kadaluwarsa tanpa menerima kode.</p>
+            </div>
+
+            </div>
+        </div>
+
+        <!-- Payment Method Modal -->
+        <div x-show="showPaymentModal" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div x-show="showPaymentModal" x-transition.opacity class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showPaymentModal = false"></div>
+            <div x-show="showPaymentModal" x-transition.scale.95 class="relative bg-white dark:bg-[#12121A] w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 z-10">
+                <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Pilih Metode Pembayaran</h3>
+                <p class="text-xs text-slate-500 mb-6 font-medium">Sewa nomor virtual untuk <span class="font-bold text-slate-800 dark:text-slate-300" x-text="selectedCountryName"></span> seharga <span class="font-bold text-blue-500" x-text="'Rp ' + (selectedRate ? (Number(selectedRate.price) + nokosMargin).toLocaleString('id-ID') : 0)"></span></p>
+                
+                <div class="space-y-3">
+                    <button @click="processPayment('balance')" class="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-900/50 transition-all text-left group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Saldo Akun</h4>
+                                <p class="text-[10px] text-slate-500 font-medium mt-0.5">Potong langsung dari saldo web</p>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+
+                    <button @click="processPayment('qris')" class="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-900/50 transition-all text-left group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white text-sm">QRIS PayDisini</h4>
+                                <p class="text-[10px] text-slate-500 font-medium mt-0.5">Bayar instan dengan aplikasi dompet digital</p>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QRIS Polling Modal -->
+        <div x-show="showQrisModal" style="display: none;" class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div x-show="showQrisModal" x-transition.opacity class="absolute inset-0 bg-slate-900/80 backdrop-blur-md"></div>
+            <div x-show="showQrisModal" x-transition.scale.95 class="relative bg-white dark:bg-[#12121A] w-full max-w-sm rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-10 flex flex-col items-center p-8 text-center">
+                <div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
+                <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Menunggu Pembayaran</h3>
+                <p class="text-xs text-slate-500 mb-6 font-medium">Scan kode QR di bawah menggunakan aplikasi e-wallet Anda. Sistem akan otomatis memverifikasi saat LUNAS.</p>
+                
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6 inline-block">
+                    <template x-if="showQrisModal && qrisString">
+                        <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrisString)" alt="QRIS" class="w-48 h-48 mx-auto" @error="window.uiCore.showToast('Gagal memuat QR Code. Silakan muat ulang.', 'error')">
+                    </template>
+                </div>
+                
+                <p class="text-[10px] text-red-500 font-bold mb-4">*Jangan tutup jendela ini sebelum pembayaran terkonfirmasi.</p>
+                
+                <button @click="showQrisModal = false; clearInterval(qrisInterval)" class="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">Batal / Tutup</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const countriesData = <%- JSON.stringify(countries) %>;
+        const nokosMargin = <%= nokosMargin %>;
+
+        function nokosApp() {
+            return {
+                loading: false,
+                // Order Monitoring State
+                showStatus: false,
+                phoneNumber: 'Wait...',
+                otpCode: '------',
+                otpReceived: false,
+                monitorInterval: null,
+                searchQuery: '',
+                countries: countriesData,
+                nokosMargin: nokosMargin,
+                selectedCountryName: '',
+                
+                // Payment & QRIS State
+                showPaymentModal: false,
+                selectedRate: null,
+                showQrisModal: false,
+                qrisString: '',
+                qrisOrderId: '',
+                qrisInterval: null,
+
+                init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const preselectedCountryId = urlParams.get('countryProductId');
+                    if (preselectedCountryId) {
+                        const country = this.countries.find(c => String(c.id) === String(preselectedCountryId));
+                        if (country) {
+                            this.openPaymentModal(country);
+                        }
+                    }
+                },
+
+                get filteredCountries() {
+                    if (!this.searchQuery) return this.countries;
+                    const q = this.searchQuery.toLowerCase();
+                    return this.countries.filter(c => 
+                        c.country_name.toLowerCase().includes(q)
+                    );
+                },
+
+                get uniqueCountries() {
+                    const seen = new Set();
+                    const unique = [];
+                    this.countries.forEach(c => {
+                        if (!seen.has(c.country_name)) {
+                            seen.add(c.country_name);
+                            unique.push(c);
+                        }
+                    });
+                    return unique.sort((a, b) => a.country_name.localeCompare(b.country_name));
+                },
+
+                get operatorRates() {
+                    if (!this.selectedCountryName) return [];
+                    const options = this.countries.filter(c => c.country_name === this.selectedCountryName);
+                    options.sort((a, b) => a.price - b.price);
+                    if (options.length === 0) return [];
+                    
+                    return options.map((opt, index) => {
+                        let type = 'Standar';
+                        if (options.length > 1) {
+                            if (index === 0) type = 'Termurah';
+                            else if (index === options.length - 1) type = 'Tertinggi / Premium';
+                        }
+                        return {
+                            type,
+                            ...opt
+                        };
+                    });
+                },
+
+                resetCheckout() {
+                    if (this.monitorInterval) {
+                        clearInterval(this.monitorInterval);
+                    }
+                    if (this.qrisInterval) {
+                        clearInterval(this.qrisInterval);
+                    }
+                    this.showStatus = false;
+                    this.phoneNumber = 'Wait...';
+                    this.otpCode = '------';
+                    this.otpReceived = false;
+                    this.loading = false;
+                    this.selectedCountryName = '';
+                    this.showPaymentModal = false;
+                    this.showQrisModal = false;
+                },
+
+                getCountryCode(name) {
+                    if (!name) return 'id';
+                    const lower = name.toLowerCase();
+                    if (lower.includes('indonesia')) return 'id';
+                    if (lower.includes('united states') || lower.includes('amerika')) return 'us';
+                    if (lower.includes('united kingdom') || lower.includes('inggris')) return 'gb';
+                    if (lower.includes('malaysia')) return 'my';
+                    if (lower.includes('russia') || lower.includes('rusia')) return 'ru';
+                    if (lower.includes('vietnam')) return 'vn';
+                    if (lower.includes('thailand')) return 'th';
+                    if (lower.includes('philippines') || lower.includes('filipina')) return 'ph';
+                    if (lower.includes('singapore') || lower.includes('singapura')) return 'sg';
+                    if (lower.includes('india')) return 'in';
+                    if (lower.includes('brazil')) return 'br';
+                    if (lower.includes('cambodia') || lower.includes('kamboja')) return 'kh';
+                    if (lower.includes('myanmar')) return 'mm';
+                    
+                    const country = this.countries.find(c => c.country_name === name);
+                    if (country && country.country_emoji) {
+                        const emoji = country.country_emoji;
+                        if (emoji && emoji.length >= 2) {
+                            const codePoints = Array.from(emoji).map(c => c.codePointAt(0));
+                            const chars = codePoints
+                                .filter(cp => cp >= 127462 && cp <= 127487)
+                                .map(cp => String.fromCharCode(cp - 127462 + 65));
+                            if (chars.length > 0) return chars.join('').toLowerCase();
+                        }
+                    }
+                    return 'id';
+                },
+
+                openPaymentModal(rate) {
+                    this.selectedRate = rate;
+                    this.showPaymentModal = true;
+                },
+
+                async processPayment(method) {
+                    if (this.loading || !this.selectedRate) return;
+                    this.showPaymentModal = false;
+                    this.loading = true;
+
+                    if (method === 'balance') {
+                        try {
+                            const response = await fetch('/nokos/order', {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'x-csrf-token': '<%= typeof csrfToken !== "undefined" ? csrfToken : "" %>'
+                                },
+                                body: JSON.stringify({ serviceId: '<%= service.id %>', countryId: this.selectedRate.id })
+                            });
+                            
+                            let data;
+                            try { data = await response.json(); } catch(err) { throw new Error('Server error'); }
+
+                            if (data.success) {
+                                this.showStatus = true;
+                                this.phoneNumber = '+' + data.phoneNumber;
+                                window.uiCore.showToast('Nomor virtual berhasil disewa!', 'success');
+                                this.startMonitoring(data.orderId);
+                            } else {
+                                window.uiCore.showToast(data.message || 'Gagal memesan nomor virtual.', 'error');
+                            }
+                        } catch (err) {
+                            window.uiCore.showToast('Gagal menghubungi server. Silakan coba lagi.', 'error');
+                        } finally {
+                            this.loading = false;
+                        }
+                    } else if (method === 'qris') {
+                        try {
+                            const response = await fetch('/nokos/qris-order', {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'x-csrf-token': '<%= typeof csrfToken !== "undefined" ? csrfToken : "" %>'
+                                },
+                                body: JSON.stringify({ serviceId: '<%= service.id %>', countryId: this.selectedRate.id })
+                            });
+                            
+                            let data;
+                            try { data = await response.json(); } catch(err) { throw new Error('Server error'); }
+                            
+                            if (data.success) {
+                                this.qrisString = data.qrString;
+                                this.qrisOrderId = data.orderId;
+                                this.showQrisModal = true;
+                                this.startQrisPolling();
+                            } else {
+                                window.uiCore.showToast(data.message || 'Gagal memuat QRIS.', 'error');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            window.uiCore.showToast('Kesalahan membuat QRIS.', 'error');
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                },
+
+                startQrisPolling() {
+                    if (this.qrisInterval) clearInterval(this.qrisInterval);
+                    this.qrisInterval = setInterval(async () => {
+                        try {
+                            const res = await fetch('/nokos/qris-status/' + this.qrisOrderId);
+                            const data = await res.json();
+                            
+                            if (data.status === 'completed') {
+                                clearInterval(this.qrisInterval);
+                                this.showQrisModal = false;
+                                
+                                this.showStatus = true;
+                                this.phoneNumber = '+' + data.phoneNumber;
+                                window.uiCore.showToast('Pembayaran QRIS Lunas! Nomor berhasil didapat.', 'success');
+                                this.startMonitoring(data.orderId || this.qrisOrderId);
+                            } else if (data.status === 'failed') {
+                                clearInterval(this.qrisInterval);
+                                this.showQrisModal = false;
+                                window.uiCore.showToast(data.message || 'Transaksi gagal atau stok habis, saldo Anda telah dikembalikan.', 'error');
+                            }
+                        } catch (e) {
+                            console.error('QRIS Polling Error:', e);
+                        }
+                    }, 5000);
+                },
+
+                startMonitoring(orderId) {
+                    this.monitorInterval = setInterval(async () => {
+                        try {
+                            const response = await fetch('/nokos/status/' + orderId);
+                            const data = await response.json();
+                            if (data.success) {
+                                if (data.status === 'completed') {
+                                    this.otpCode = data.otpCode;
+                                    this.otpReceived = true;
+                                    this.loading = false;
+                                    clearInterval(this.monitorInterval);
+                                    window.uiCore.showToast('OTP Berhasil Diterima!', 'success');
+                                } else if (data.status === 'failed') {
+                                    clearInterval(this.monitorInterval);
+                                    this.loading = false;
+                                    this.showStatus = false;
+                                    window.uiCore.showToast(data.message || 'Sewa nomor telah kadaluwarsa.', 'error');
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Monitoring error', err);
+                        }
+                    }, 5000);
+                },
+
+                copyPhone() {
+                    navigator.clipboard.writeText(this.phoneNumber);
+                    window.uiCore.showToast('Nomor virtual berhasil disalin!', 'success');
+                },
+
+                copyOtp() {
+                    navigator.clipboard.writeText(this.otpCode);
+                    window.uiCore.showToast('Kode OTP berhasil disalin!', 'success');
+                }
+            };
+        }
+    </script>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true, offset: 40 });
+    </script>
+</body>
+
+</html>
+
