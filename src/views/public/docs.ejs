@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= title %></title>
+    <meta name="description" content="Dokumentasi REST API lengkap untuk mengintegrasikan layanan <%= settings.web_name %> ke bot atau aplikasi Anda.">
+    <link rel="stylesheet" href="/css/output.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* Copy button */
+        .code-block-wrapper { position: relative; }
+        .copy-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8; padding: 4px 10px; border-radius: 8px;
+            font-size: 10px; font-weight: 700; font-family: 'Outfit', sans-serif;
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .copy-btn:hover { background: rgba(255,255,255,0.13); color: #e2e8f0; }
+        .copy-btn.copied { background: rgba(16,185,129,0.2); color: #10b981; border-color: rgba(16,185,129,0.3); }
+
+        /* Category tabs */
+        .cat-tab { transition: all 0.2s; }
+        .cat-tab.active-nokos { background: linear-gradient(135deg,#25d366,#128c7e); color:#fff; box-shadow: 0 8px 20px -6px rgba(37,211,102,0.4); }
+        .cat-tab.active-app   { background: linear-gradient(135deg,#f43f5e,#e11d48); color:#fff; box-shadow: 0 8px 20px -6px rgba(244,63,94,0.4); }
+        .cat-tab.active-panel { background: linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; box-shadow: 0 8px 20px -6px rgba(59,130,246,0.4); }
+        .cat-tab.active-script{ background: linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow: 0 8px 20px -6px rgba(245,158,11,0.4); }
+
+        /* Sidebar nav active */
+        .snav-item.snav-active { color: #60a5fa; font-weight: 800; background: rgba(59,130,246,0.08); }
+        .snav-item { transition: all 0.15s; }
+
+        /* Endpoint badge */
+        .badge-get  { background:#d1fae5; color:#065f46; }
+        .badge-post { background:#dbeafe; color:#1e40af; }
+        .dark .badge-get  { background:rgba(16,185,129,0.15); color:#6ee7b7; }
+        .dark .badge-post { background:rgba(59,130,246,0.15); color:#93c5fd; }
+
+        /* Table */
+        .param-table td, .param-table th { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(148,163,184,0.12); }
+        .param-table th { font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+        .param-table .req { color: #f43f5e; font-weight: 700; font-size: 11px; }
+        .param-table .opt { color: #64748b; font-size: 11px; }
+        .param-table .mono { font-family: 'Courier New', monospace; color: #60a5fa; font-size: 12px; }
+
+        /* Highlight alert box */
+        .info-box { border-left: 3px solid; padding: 14px 18px; border-radius: 0 12px 12px 0; font-size: 13px; font-weight: 600; }
+        .info-box.blue  { background: rgba(59,130,246,0.07);  border-color: #3b82f6; color: #60a5fa; }
+        .info-box.green { background: rgba(16,185,129,0.07);  border-color: #10b981; color: #34d399; }
+        .info-box.amber { background: rgba(245,158,11,0.07);  border-color: #f59e0b; color: #fbbf24; }
+        .info-box.red   { background: rgba(239,68,68,0.07);   border-color: #ef4444; color: #f87171; }
+
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#0B0D14] text-slate-800 dark:text-slate-200 antialiased min-h-screen" x-data="docsApp()" x-init="init()">
+
+    <!-- Top Nav -->
+    <nav class="bg-white/90 dark:bg-[#0E1020]/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-200 dark:border-white/5 sticky top-0 z-50 h-16">
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <!-- Mobile hamburger -->
+                <button @click="mobileOpen = !mobileOpen" class="lg:hidden p-2 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <a href="/" class="flex items-center gap-2.5">
+                    <img src="<%= settings.web_logo %>" alt="Logo" class="w-8 h-8 rounded-xl object-contain">
+                    <span class="font-black text-slate-900 dark:text-white text-lg"><%= settings.web_name %> <span class="text-slate-600 dark:text-slate-500 dark:text-slate-400 font-medium text-sm">API Docs</span></span>
+                </a>
+            </div>
+            <div class="flex items-center gap-2">
+                <!-- Dark/Light toggle -->
+                <button onclick="document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark')? 'dark':'light')"
+                        class="p-2 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+                <a href="/dashboard" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-black transition-all hover:-translate-y-0.5 active:translate-y-0">Dashboard →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast -->
+    <div id="toast-container" class="fixed top-20 right-4 z-[9999] flex flex-col gap-2"></div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div x-show="mobileOpen" @click="mobileOpen = false" x-transition.opacity class="fixed inset-0 bg-black/60 z-40 lg:hidden" x-cloak></div>
+
+    <!-- Layout -->
+    <div class="max-w-screen-2xl mx-auto flex min-h-[calc(100vh-4rem)]">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside :class="mobileOpen ? 'translate-x-0' : '-translate-x-full'"
+               class="fixed top-16 left-0 h-[calc(100vh-4rem)] w-72 z-50 bg-white dark:bg-[#0E1020] border-r border-slate-200 dark:border-slate-200 dark:border-white/5 p-6 overflow-y-auto transition-transform duration-300 lg:translate-x-0 lg:static lg:block lg:w-64 lg:shrink-0">
+
+            <!-- Category Switcher -->
+            <div class="mb-6">
+                <p class="text-[10px] font-black text-slate-500 dark:text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Kategori API</p>
+                <div class="flex flex-col gap-1.5">
+                    <button @click="setCategory('nokos')" class="cat-tab flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-left transition-all"
+                            :class="activeCategory === 'nokos' ? 'active-nokos' : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'">
+                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.73.44 3.36 1.21 4.79L2 22l5.37-1.39c1.4.74 2.99 1.16 4.63 1.16 5.52 0 10-4.48 10-10S17.52 2 12.004 2z"/></svg>
+                        <span>Nokos OTP</span>
+                    </button>
+                    <button @click="setCategory('app')" class="cat-tab flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-left transition-all"
+                            :class="activeCategory === 'app' ? 'active-app' : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Premium App</span>
+                    </button>
+                    <button @click="setCategory('panel')" class="cat-tab flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-left transition-all"
+                            :class="activeCategory === 'panel' ? 'active-panel' : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                        <span>Panel Pterodactyl</span>
+                    </button>
+                    <button @click="setCategory('script')" class="cat-tab flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-left transition-all"
+                            :class="activeCategory === 'script' ? 'active-script' : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                        <span>Script / Digital</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-200 dark:border-white/5 pt-5">
+                <p class="text-[10px] font-black text-slate-500 dark:text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Navigasi</p>
+                <ul class="space-y-0.5 text-xs" id="sidebar-nav">
+                    <!-- populated by JS per category -->
+                    <template x-for="item in sidebarItems" :key="item.id">
+                        <li>
+                            <a :href="'#' + item.id"
+                               @click="mobileOpen = false"
+                               class="snav-item flex items-center justify-between px-3 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
+                               :class="activeSection === item.id ? 'snav-active' : ''">
+                                <span x-text="item.label"></span>
+                                <span x-show="item.method" class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md"
+                                      :class="item.method === 'GET' ? 'badge-get' : 'badge-post'" x-text="item.method"></span>
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            <!-- Base URL -->
+            <div class="mt-6 p-3 bg-slate-100 dark:bg-white/3 border border-slate-200 dark:border-slate-200 dark:border-white/5 rounded-xl">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Base URL</p>
+                <code class="text-xs text-blue-400 font-mono break-all"><%= settings.web_domain %>/api/v1</code>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="flex-1 overflow-hidden px-4 sm:px-8 lg:px-12 py-10 max-w-4xl">
+
+            <!-- Hero Header -->
+            <div class="mb-12" data-aos="fade-up">
+                <div x-show="activeCategory === 'nokos'" x-cloak class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-[#25d366]/15 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-[#25d366]" viewBox="0 0 24 24" fill="currentColor"><path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.73.44 3.36 1.21 4.79L2 22l5.37-1.39c1.4.74 2.99 1.16 4.63 1.16 5.52 0 10-4.48 10-10S17.52 2 12.004 2zm5.72 14.15c-.24.68-1.2 1.24-1.65 1.29-.41.05-.95.07-1.54-.12-.36-.12-.83-.28-1.42-.53-2.52-1.07-4.14-3.66-4.26-3.82-.12-.16-1.02-1.37-1.02-2.61s.64-1.85.87-2.1c.24-.24.52-.3.69-.3h.49c.16.01.37-.06.58.45.21.52.73 1.79.79 1.91.06.12.1.26.02.42-.08.16-.18.26-.29.4-.12.13-.25.3-.36.42-.12.14-.25.29-.1.54.14.24.64 1.07 1.38 1.73.95.85 1.74 1.11 1.99 1.23.25.12.39.1.53-.06.14-.16.6-1.04.76-1.25.16-.21.32-.18.54-.1.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.18 1.26z"/></svg>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-[#25d366]/70">Virtual OTP API</span>
+                        <h1 class="text-3xl font-black text-slate-900 dark:text-white">Nokos OTP</h1>
+                    </div>
+                </div>
+                <div x-show="activeCategory === 'app'" class="flex items-center gap-3 mb-4" x-cloak>
+                    <div class="w-12 h-12 rounded-2xl bg-rose-500/15 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-rose-400/70">Streaming & Apps</span>
+                        <h1 class="text-3xl font-black text-slate-900 dark:text-white">Premium App</h1>
+                    </div>
+                </div>
+                <div x-show="activeCategory === 'panel'" class="flex items-center gap-3 mb-4" x-cloak>
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-400/70">Pterodactyl Panel</span>
+                        <h1 class="text-3xl font-black text-slate-900 dark:text-white">Panel Pterodactyl</h1>
+                    </div>
+                </div>
+                <div x-show="activeCategory === 'script'" class="flex items-center gap-3 mb-4" x-cloak>
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-amber-400/70">Bot & Digital Tools</span>
+                        <h1 class="text-3xl font-black text-slate-900 dark:text-white">Script / Digital</h1>
+                    </div>
+                </div>
+                <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 font-medium text-base leading-relaxed" x-text="categoryDesc"></p>
+            </div>
+
+            <!-- ════════════════════════════════════
+                 SHARED: Auth + Payment Types
+            ════════════════════════════════════ -->
+            <section id="auth" class="mb-12 border-t border-slate-200 dark:border-white/5 pt-10">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 dark:text-white">Authentication</h2>
+                </div>
+                <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Semua request wajib menyertakan API key di header. Generate API key di halaman profil reseller Anda.</p>
+                <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre class="text-sm font-mono leading-relaxed overflow-x-auto"><span class="text-slate-500">// Headers wajib untuk setiap request</span>
+{
+  <span class="text-blue-400">"x-api-key"</span>: <span class="text-green-400">"AOC-YOUR_SECRET_KEY_HERE"</span>,
+  <span class="text-blue-400">"Content-Type"</span>: <span class="text-green-400">"application/json"</span>
+}</pre>
+                </div>
+            </section>
+
+            <!-- ════════════════════════════════════
+                 NOKOS OTP SECTION
+            ════════════════════════════════════ -->
+            <div x-show="activeCategory === 'nokos'" x-cloak class="space-y-12">
+
+                <!-- Get Services -->
+                <section id="nokos-services" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/nokos/services</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Dapatkan daftar semua layanan OTP aktif beserta harga dan ID layanan yang dibutuhkan untuk order.</p>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"count"</span>: <span class="text-orange-400">4</span>,
+  <span class="text-blue-400">"data"</span>: [
+    {
+      <span class="text-blue-400">"id"</span>: <span class="text-green-400">"prod_abc123"</span>,
+      <span class="text-blue-400">"name"</span>: <span class="text-green-400">"WhatsApp OTP"</span>,
+      <span class="text-blue-400">"otpServiceId"</span>: <span class="text-green-400">"whatsapp"</span>,
+      <span class="text-blue-400">"price"</span>: <span class="text-orange-400">1500</span>,       <span class="text-slate-500">// Harga per nomor (termasuk margin)</span>
+      <span class="text-blue-400">"isActive"</span>: <span class="text-purple-400">true</span>
+    },
+    {
+      <span class="text-blue-400">"id"</span>: <span class="text-green-400">"prod_def456"</span>,
+      <span class="text-blue-400">"name"</span>: <span class="text-green-400">"Telegram OTP"</span>,
+      <span class="text-blue-400">"otpServiceId"</span>: <span class="text-green-400">"telegram"</span>,
+      <span class="text-blue-400">"price"</span>: <span class="text-orange-400">1200</span>,
+      <span class="text-blue-400">"isActive"</span>: <span class="text-purple-400">true</span>
+    }
+  ]
+}</pre>
+                    </div>
+                </section>
+
+                <!-- Get Countries / Rates -->
+                <section id="nokos-rates" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/nokos/rates/:serviceId</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Ambil daftar negara dan operator yang tersedia untuk layanan OTP tertentu, beserta harga per operator.</p>
+                    <div class="info-box blue mb-5">💡 <strong>serviceId</strong> = nilai field <code>otpServiceId</code> dari endpoint <code>GET /nokos/services</code>, contoh: <code>whatsapp</code></div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Path Parameter</h4>
+                    <table class="w-full param-table mb-5">
+                        <thead><tr><th>Parameter</th><th>Tipe</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">serviceId</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td>ID layanan OTP (whatsapp, telegram, google, dll)</td></tr>
+                        </tbody>
+                    </table>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"service"</span>: <span class="text-green-400">"whatsapp"</span>,
+  <span class="text-blue-400">"data"</span>: [
+    {
+      <span class="text-blue-400">"countryName"</span>: <span class="text-green-400">"Indonesia"</span>,
+      <span class="text-blue-400">"countryCode"</span>: <span class="text-green-400">"id"</span>,
+      <span class="text-blue-400">"operators"</span>: [
+        {
+          <span class="text-blue-400">"operatorName"</span>: <span class="text-green-400">"any"</span>,
+          <span class="text-blue-400">"cost"</span>: <span class="text-orange-400">1.2</span>,       <span class="text-slate-500">// Harga (dalam unit)</span>
+          <span class="text-blue-400">"count"</span>: <span class="text-orange-400">5842</span>    <span class="text-slate-500">// Stok nomor tersedia</span>
+        }
+      ]
+    }
+  ]
+}</pre>
+                    </div>
+                </section>
+
+                <!-- Order OTP Number -->
+                <section id="nokos-order" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-post text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">POST</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/nokos/order</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Order nomor virtual OTP untuk layanan dan negara tertentu. Saldo akan dipotong dan nomor virtual langsung dikembalikan.</p>
+                    <div class="info-box amber mb-5">⚠️ Gunakan <strong>paymentType: "direct"</strong> untuk OTP. QRIS tidak didukung karena proses harus real-time.</div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Request Body</h4>
+                    <table class="w-full param-table mb-5">
+                        <thead><tr><th>Parameter</th><th>Tipe</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">productId</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td>ID produk OTP dari <code class="text-blue-400">/nokos/services</code></td></tr>
+                            <tr><td class="mono">country</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td>Kode negara 2 huruf, contoh: <code class="text-blue-400">id</code>, <code class="text-blue-400">us</code></td></tr>
+                            <tr><td class="mono">operator</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="opt">Optional</td><td>Nama operator (default: <code class="text-blue-400">any</code>)</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5 mb-5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"productId"</span>: <span class="text-green-400">"prod_abc123"</span>,
+  <span class="text-blue-400">"country"</span>: <span class="text-green-400">"id"</span>,
+  <span class="text-blue-400">"operator"</span>: <span class="text-green-400">"any"</span>
+}</pre>
+                    </div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response (Sukses)</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"orderId"</span>: <span class="text-green-400">"OTP-XYZ789"</span>,
+  <span class="text-blue-400">"phoneNumber"</span>: <span class="text-green-400">"+62812345678"</span>,  <span class="text-slate-500">// Nomor virtual yang diterima</span>
+  <span class="text-blue-400">"status"</span>: <span class="text-green-400">"pending"</span>,             <span class="text-slate-500">// Menunggu kode OTP masuk</span>
+  <span class="text-blue-400">"expiresAt"</span>: <span class="text-green-400">"2024-01-01T12:10:00Z"</span>
+}</pre>
+                    </div>
+                </section>
+
+                <!-- Check OTP -->
+                <section id="nokos-check" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/nokos/order/:orderId</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Cek status order OTP dan ambil kode SMS yang sudah masuk. Poll endpoint ini tiap 3–5 detik hingga <code class="text-green-400">status: "completed"</code>.</p>
+                    <div class="info-box green mb-5">✅ Bila <strong>status = completed</strong>, field <strong>otpCode</strong> berisi kode SMS yang berhasil diterima.</div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"orderId"</span>: <span class="text-green-400">"OTP-XYZ789"</span>,
+  <span class="text-blue-400">"phoneNumber"</span>: <span class="text-green-400">"+62812345678"</span>,
+  <span class="text-blue-400">"status"</span>: <span class="text-green-400">"completed"</span>,
+  <span class="text-blue-400">"otpCode"</span>: <span class="text-green-400">"123456"</span>,          <span class="text-slate-500">// Kode SMS OTP</span>
+  <span class="text-blue-400">"service"</span>: <span class="text-green-400">"whatsapp"</span>
+}</pre>
+                    </div>
+                </section>
+
+                <!-- Cancel OTP -->
+                <section id="nokos-cancel" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-post text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">POST</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/nokos/order/:orderId/cancel</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Batalkan order nomor OTP yang masih berstatus <code class="text-amber-400">pending</code>. Saldo akan dikembalikan jika pembatalan berhasil.</p>
+                    <div class="info-box red mb-5">⛔ Order yang sudah <strong>completed</strong> tidak bisa dibatalkan dan saldo tidak dikembalikan.</div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response (Sukses)</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"message"</span>: <span class="text-green-400">"Order cancelled. Balance refunded."</span>,
+  <span class="text-blue-400">"refundAmount"</span>: <span class="text-orange-400">1500</span>
+}</pre>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- ════════════════════════════════════
+                 PREMIUM APP SECTION
+            ════════════════════════════════════ -->
+            <div x-show="activeCategory === 'app'" x-cloak class="space-y-12">
+
+                <section id="app-products" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/products?type=premium_app</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Ambil daftar produk Premium App yang tersedia (Netflix, Spotify, YouTube Premium, dll) beserta stok tersisa.</p>
+                    <div class="info-box blue mb-5">💡 <strong>stock = -1</strong> berarti unlimited. <strong>stock = 0</strong> berarti habis / sold out.</div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"count"</span>: <span class="text-orange-400">8</span>,
+  <span class="text-blue-400">"data"</span>: [
+    {
+      <span class="text-blue-400">"id"</span>: <span class="text-green-400">"prod_netflix_1m"</span>,
+      <span class="text-blue-400">"name"</span>: <span class="text-green-400">"Netflix Premium 1 Bulan"</span>,
+      <span class="text-blue-400">"price"</span>: <span class="text-orange-400">45000</span>,
+      <span class="text-blue-400">"resellerPrice"</span>: <span class="text-orange-400">50000</span>,  <span class="text-slate-500">// Harga + margin reseller</span>
+      <span class="text-blue-400">"stock"</span>: <span class="text-orange-400">24</span>,             <span class="text-slate-500">// Stok akun tersedia</span>
+      <span class="text-blue-400">"appPlatform"</span>: <span class="text-green-400">"Netflix"</span>
+    }
+  ]
+}</pre>
+                    </div>
+                </section>
+
+                <section id="app-order" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-post text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">POST</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/order</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Order akun premium app. Setelah berhasil, data akun (email + password) langsung dikembalikan dalam response.</p>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Request Body</h4>
+                    <table class="w-full param-table mb-5">
+                        <thead><tr><th>Parameter</th><th>Tipe</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">productId</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td>ID produk dari <code class="text-blue-400">/products?type=premium_app</code></td></tr>
+                            <tr><td class="mono">paymentType</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td><code class="text-blue-400">"direct"</code> (saldo) atau <code class="text-blue-400">"qris"</code></td></tr>
+                            <tr><td class="mono">voucherCode</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="opt">Optional</td><td>Kode voucher diskon</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5 mb-5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"productId"</span>: <span class="text-green-400">"prod_netflix_1m"</span>,
+  <span class="text-blue-400">"paymentType"</span>: <span class="text-green-400">"direct"</span>
+}</pre>
+                    </div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response (Sukses - Direct)</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"orderId"</span>: <span class="text-green-400">"API-ABC999"</span>,
+  <span class="text-blue-400">"status"</span>: <span class="text-green-400">"completed"</span>,
+  <span class="text-blue-400">"data"</span>: {
+    <span class="text-blue-400">"accountEmail"</span>: <span class="text-green-400">"user@netflix.com"</span>,
+    <span class="text-blue-400">"accountPassword"</span>: <span class="text-green-400">"P@ssw0rd123"</span>,
+    <span class="text-blue-400">"specialNotes"</span>: <span class="text-green-400">"Profil ke-2, jangan ubah bahasa"</span>
+  }
+}</pre>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- ════════════════════════════════════
+                 PANEL / PTERODACTYL SECTION
+            ════════════════════════════════════ -->
+            <div x-show="activeCategory === 'panel'" x-cloak class="space-y-12">
+
+                <section id="panel-products" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/products?type=pterodactyl</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Ambil semua paket Server Pterodactyl yang tersedia, beserta spesifikasi RAM, disk, dan CPU.</p>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"data"</span>: [
+    {
+      <span class="text-blue-400">"id"</span>: <span class="text-green-400">"prod_nodejs_1gb"</span>,
+      <span class="text-blue-400">"name"</span>: <span class="text-green-400">"Node.js Bot 1GB"</span>,
+      <span class="text-blue-400">"price"</span>: <span class="text-orange-400">15000</span>,
+      <span class="text-blue-400">"resellerPrice"</span>: <span class="text-orange-400">20000</span>,
+      <span class="text-blue-400">"specs"</span>: {
+        <span class="text-blue-400">"memory"</span>: <span class="text-orange-400">1024</span>,    <span class="text-slate-500">// MB</span>
+        <span class="text-blue-400">"disk"</span>: <span class="text-orange-400">5120</span>,      <span class="text-slate-500">// MB</span>
+        <span class="text-blue-400">"cpu"</span>: <span class="text-orange-400">100</span>,        <span class="text-slate-500">// %</span>
+        <span class="text-blue-400">"databases"</span>: <span class="text-orange-400">1</span>,
+        <span class="text-blue-400">"backups"</span>: <span class="text-orange-400">1</span>
+      }
+    }
+  ]
+}</pre>
+                    </div>
+                </section>
+
+                <section id="panel-order" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-post text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">POST</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/order</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Deploy server Pterodactyl secara otomatis. Username dan password panel bisa kamu tentukan sendiri atau sistem akan generate otomatis.</p>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Request Body</h4>
+                    <table class="w-full param-table mb-5">
+                        <thead><tr><th>Parameter</th><th>Tipe</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">productId</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td>ID produk dari <code class="text-blue-400">/products?type=pterodactyl</code></td></tr>
+                            <tr><td class="mono">paymentType</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td><code class="text-blue-400">"direct"</code> atau <code class="text-blue-400">"qris"</code></td></tr>
+                            <tr><td class="mono">serverUsername</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="opt">Optional</td><td>Username login panel (default: username akun kamu)</td></tr>
+                            <tr><td class="mono">serverPassword</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="opt">Optional</td><td>Password panel (default: random 12 karakter)</td></tr>
+                            <tr><td class="mono">voucherCode</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="opt">Optional</td><td>Kode voucher diskon</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5 mb-5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"productId"</span>: <span class="text-green-400">"prod_nodejs_1gb"</span>,
+  <span class="text-blue-400">"paymentType"</span>: <span class="text-green-400">"direct"</span>,
+  <span class="text-blue-400">"serverUsername"</span>: <span class="text-green-400">"user_bot_123"</span>,
+  <span class="text-blue-400">"serverPassword"</span>: <span class="text-green-400">"MySuperSecretPass!"</span>
+}</pre>
+                    </div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response (Sukses)</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"orderId"</span>: <span class="text-green-400">"API-PTR001"</span>,
+  <span class="text-blue-400">"status"</span>: <span class="text-green-400">"completed"</span>,
+  <span class="text-blue-400">"data"</span>: {
+    <span class="text-blue-400">"panelUrl"</span>: <span class="text-green-400">"https://panel.yourdomain.com"</span>,
+    <span class="text-blue-400">"serverUsername"</span>: <span class="text-green-400">"user_bot_123"</span>,
+    <span class="text-blue-400">"serverPassword"</span>: <span class="text-green-400">"MySuperSecretPass!"</span>,
+    <span class="text-blue-400">"serverId"</span>: <span class="text-green-400">"ptero_srv_9f3a"</span>
+  }
+}</pre>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- ════════════════════════════════════
+                 SCRIPT SECTION
+            ════════════════════════════════════ -->
+            <div x-show="activeCategory === 'script'" x-cloak class="space-y-12">
+
+                <section id="script-products" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/products?type=script</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Ambil daftar produk script / digital download yang tersedia. Setelah order, link download langsung dikembalikan.</p>
+                    <div class="info-box blue mb-5">💡 Semua produk script bersifat lifetime license. Stok selalu <strong>-1</strong> (unlimited).</div>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"data"</span>: [
+    {
+      <span class="text-blue-400">"id"</span>: <span class="text-green-400">"prod_bot_wa"</span>,
+      <span class="text-blue-400">"name"</span>: <span class="text-green-400">"WhatsApp Bot Reseller v2"</span>,
+      <span class="text-blue-400">"price"</span>: <span class="text-orange-400">75000</span>,
+      <span class="text-blue-400">"resellerPrice"</span>: <span class="text-orange-400">85000</span>,
+      <span class="text-blue-400">"stock"</span>: <span class="text-orange-400">-1</span>,
+      <span class="text-blue-400">"type"</span>: <span class="text-green-400">"script"</span>
+    }
+  ]
+}</pre>
+                    </div>
+                </section>
+
+                <section id="script-order" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-post text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">POST</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/order</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Beli lisensi script. Link download dan instruksi instalasi langsung dikembalikan setelah order berhasil.</p>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Request Body</h4>
+                    <table class="w-full param-table mb-5">
+                        <thead><tr><th>Parameter</th><th>Tipe</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">productId</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td>ID produk dari <code class="text-blue-4000">/products?type=script</code></td></tr>
+                            <tr><td class="mono">paymentType</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="req">Ya</td><td><code class="text-blue-400">"direct"</code> atau <code class="text-blue-400">"qris"</code></td></tr>
+                            <tr><td class="mono">voucherCode</td><td class="italic text-slate-500 dark:text-slate-400">String</td><td class="opt">Optional</td><td>Kode voucher diskon</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5 mb-5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"productId"</span>: <span class="text-green-400">"prod_bot_wa"</span>,
+  <span class="text-blue-400">"paymentType"</span>: <span class="text-green-400">"direct"</span>
+}</pre>
+                    </div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Response (Sukses)</h4>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"orderId"</span>: <span class="text-green-400">"API-SCR442"</span>,
+  <span class="text-blue-400">"status"</span>: <span class="text-green-400">"completed"</span>,
+  <span class="text-blue-400">"data"</span>: {
+    <span class="text-blue-400">"downloadUrl"</span>: <span class="text-green-400">"https://cdn.yourdomain.com/scripts/bot-wa-v2.zip"</span>,
+    <span class="text-blue-400">"instructions"</span>: <span class="text-green-400">"1. Extract zip\n2. npm install\n3. node index.js"</span>,
+    <span class="text-blue-400">"licenseKey"</span>: <span class="text-green-400">"LIC-XXXXXXXX-XXXXXXXX"</span>
+  }
+}</pre>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- ════════════════════════════════════
+                 SHARED: Balance + Order Status (shown for all categories)
+            ════════════════════════════════════ -->
+            <div class="space-y-12 mt-12" x-show="true">
+                <section id="balance" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/account</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Cek saldo dan informasi akun reseller kamu.</p>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"data"</span>: {
+    <span class="text-blue-400">"username"</span>: <span class="text-green-400">"AlxzyReseller"</span>,
+    <span class="text-blue-400">"role"</span>: <span class="text-green-400">"reseller"</span>,
+    <span class="text-blue-400">"balance"</span>: <span class="text-orange-400">150000</span>,
+    <span class="text-blue-400">"margin"</span>: <span class="text-orange-400">5000</span>
+  }
+}</pre>
+                    </div>
+                </section>
+
+                <section id="deposit" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-post text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">POST</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/deposit</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Generate QRIS untuk top-up saldo reseller kamu.</p>
+                    <table class="w-full param-table mb-5">
+                        <thead><tr><th>Parameter</th><th>Tipe</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">amount</td><td class="italic text-slate-500 dark:text-slate-400">Number</td><td class="req">Ya</td><td>Jumlah deposit dalam Rupiah (min Rp 1.000)</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"data"</span>: {
+    <span class="text-blue-400">"depositId"</span>: <span class="text-green-400">"DEP-XYZ123"</span>,
+    <span class="text-blue-400">"amount"</span>: <span class="text-orange-400">50000</span>,
+    <span class="text-blue-400">"qris_data"</span>: <span class="text-green-400">"00020101021126570011ID.ESPAY..."</span>,
+    <span class="text-blue-400">"expiresAt"</span>: <span class="text-green-400">"2024-01-01T12:15:00Z"</span>
+  }
+}</pre>
+                    </div>
+                </section>
+
+                <section id="order-status" class="border-t border-slate-200 dark:border-white/5 pt-10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="badge-get text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md">GET</span>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">/api/v1/order/:orderId</h2>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm font-medium mb-5">Cek status dan detail order berdasarkan Order ID yang didapat dari endpoint POST /order.</p>
+                    <div class="code-block-wrapper bg-slate-900 dark:bg-[#0A0C18] rounded-2xl p-5 border border-slate-800 dark:border-slate-200 dark:border-white/5">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <pre class="text-sm font-mono leading-relaxed overflow-x-auto">{
+  <span class="text-blue-400">"success"</span>: <span class="text-purple-400">true</span>,
+  <span class="text-blue-400">"data"</span>: {
+    <span class="text-blue-400">"orderId"</span>: <span class="text-green-400">"API-XYZ123"</span>,
+    <span class="text-blue-400">"status"</span>: <span class="text-green-400">"completed"</span>,  <span class="text-slate-500">// pending | completed | failed | cancelled</span>
+    <span class="text-blue-400">"productName"</span>: <span class="text-green-400">"Netflix Premium 1 Bulan"</span>,
+    <span class="text-blue-400">"paidAt"</span>: <span class="text-green-400">"2024-01-01T12:00:00Z"</span>,
+    <span class="text-blue-400">"data"</span>: { <span class="text-slate-500">/* hasil sesuai kategori produk */</span> }
+  }
+}</pre>
+                    </div>
+                </section>
+            </div>
+
+            <div class="mt-24 pb-8 text-center text-slate-600 text-xs font-medium">
+                <%= settings.web_name %> API Docs &mdash; Built for resellers 🚀
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ once: true, duration: 500 });
+
+        // Theme
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Copy button
+        function copyCode(btn) {
+            const pre = btn.closest('.code-block-wrapper').querySelector('pre');
+            navigator.clipboard.writeText(pre.textContent.trim()).then(() => {
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+            });
+        }
+
+        // Alpine component
+        function docsApp() {
+            const categories = {
+                nokos: {
+                    desc: 'Integrasikan Virtual OTP Number ke bot/aplikasi Anda. Beli nomor virtual real-time, monitor kode SMS, dan batalkan order kapan saja.',
+                    nav: [
+                        { id: 'auth', label: 'Authentication' },
+                        { id: 'nokos-services', label: '/nokos/services', method: 'GET' },
+                        { id: 'nokos-rates', label: '/nokos/rates/:id', method: 'GET' },
+                        { id: 'nokos-order', label: '/nokos/order', method: 'POST' },
+                        { id: 'nokos-check', label: '/nokos/order/:id', method: 'GET' },
+                        { id: 'nokos-cancel', label: '/nokos/order/:id/cancel', method: 'POST' },
+                        { id: 'balance', label: '/account', method: 'GET' },
+                        { id: 'deposit', label: '/deposit', method: 'POST' },
+                    ]
+                },
+                app: {
+                    desc: 'Jual akun Premium App (Netflix, Spotify, YouTube dll.) ke customer Anda. Order langsung dapat email & password akun.',
+                    nav: [
+                        { id: 'auth', label: 'Authentication' },
+                        { id: 'app-products', label: '/products?type=premium_app', method: 'GET' },
+                        { id: 'app-order', label: '/order', method: 'POST' },
+                        { id: 'order-status', label: '/order/:id', method: 'GET' },
+                        { id: 'balance', label: '/account', method: 'GET' },
+                        { id: 'deposit', label: '/deposit', method: 'POST' },
+                    ]
+                },
+                panel: {
+                    desc: 'Deploy Server Pterodactyl secara otomatis. Tentukan username & password panel, sistem deploy dalam hitungan detik.',
+                    nav: [
+                        { id: 'auth', label: 'Authentication' },
+                        { id: 'panel-products', label: '/products?type=pterodactyl', method: 'GET' },
+                        { id: 'panel-order', label: '/order', method: 'POST' },
+                        { id: 'order-status', label: '/order/:id', method: 'GET' },
+                        { id: 'balance', label: '/account', method: 'GET' },
+                        { id: 'deposit', label: '/deposit', method: 'POST' },
+                    ]
+                },
+                script: {
+                    desc: 'Beli lisensi script dan bot digital. Link download langsung dikirim setelah pembayaran berhasil.',
+                    nav: [
+                        { id: 'auth', label: 'Authentication' },
+                        { id: 'script-products', label: '/products?type=script', method: 'GET' },
+                        { id: 'script-order', label: '/order', method: 'POST' },
+                        { id: 'order-status', label: '/order/:id', method: 'GET' },
+                        { id: 'balance', label: '/account', method: 'GET' },
+                        { id: 'deposit', label: '/deposit', method: 'POST' },
+                    ]
+                }
+            };
+
+            return {
+                mobileOpen: false,
+                activeCategory: 'nokos',
+                activeSection: 'auth',
+                sidebarItems: [],
+                categoryDesc: '',
+
+                setCategory(cat) {
+                    this.activeCategory = cat;
+                    this.sidebarItems = categories[cat].nav;
+                    this.categoryDesc = categories[cat].desc;
+                    this.mobileOpen = false;
+                    // scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                init() {
+                    this.setCategory('nokos');
+                    // Scroll spy
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(e => {
+                            if (e.isIntersecting) this.activeSection = e.target.id;
+                        });
+                    }, { rootMargin: '-30% 0px -60% 0px' });
+
+                    document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+                }
+            };
+        }
+    </script>
+</body>
+</html>
+
