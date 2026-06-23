@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <style>
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .dark .glass-panel { background: rgba(18, 18, 26, 0.6); border: 1px solid rgba(255, 255, 255, 0.03); }
+        .checkout-input { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .checkout-input:focus-within { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1); }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-enter { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body  class="bg-slate-50 dark:bg-[#050508] text-slate-800 dark:text-slate-200 antialiased min-h-screen selection:bg-blue-500/30">
+
+    <%- include('../partials/dashboard-navbar') %>
+    <%- include('../partials/user-sidebar') %>
+
+    <main class="pt-20 pb-12 min-h-screen flex flex-col w-full transition-all duration-300 relative overflow-hidden" 
+        x-data="{ 
+            paymentMethod: '<%= user.balance >= product.price ? 'balance' : 'qris' %>',
+            loading: false,
+            voucher: '',
+            serverUsername: '<%= user.username %>',
+            serverPassword: '',
+            finalPrice: <%= product.price %>,
+            discount: 0,
+            
+            get isFormValid() {
+                <% if (product.category && product.category.type === 'pterodactyl') { %>
+                    return this.serverUsername.trim().length >= 3;
+                <% } else { %>
+                    return true;
+                <% } %>
+            },
+
+            async processOrder() {
+                if (this.paymentMethod === 'balance' && !this.isFormValid) {
+                    uiCore.showToast('Please fill all required fields correctly', 'error');
+                    return;
+                }
+                this.loading = true;
+                try {
+                    const res = await fetch('/dashboard/orders/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            productId: '<%= product.id %>',
+                            paymentMethod: this.paymentMethod,
+                            voucherCode: this.voucher,
+                            serverUsername: this.serverUsername,
+                            serverPassword: this.serverPassword,
+                            target: '<%= product.smmTarget || "" %>',
+                            qty: '<%= product.smmQty || 0 %>',
+                            smmServiceId: '<%= product.smmServiceId || "" %>',
+                            _csrf: '<%= csrfToken %>'
+                        })
+                    });
+                    const data = await res.json();
+                    if(data.success) {
+                        if(this.paymentMethod === 'balance') {
+                            window.location.href = '/dashboard/orders/' + data.orderId;
+                        } else {
+                            window.location.href = data.paymentUrl;
+                        }
+                    } else {
+                        uiCore.showToast(data.error || 'Checkout failed', 'error');
+                        this.loading = false;
+                    }
+                } catch(e) {
+                    uiCore.showToast('System error', 'error');
+                    this.loading = false;
+                }
+            }
+        }">
+
+        <!-- Background Ambience -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/10 dark:bg-blue-600/5 blur-[120px] rounded-full pointer-events-none mix-blend-screen"></div>
+
+        <div class="p-4 sm:p-6 lg:p-8 w-full max-w-6xl mx-auto relative z-10">
+            
+            <!-- Header -->
+            <div class="mb-10 text-center animate-enter" style="animation-delay: 0s; opacity: 0;">
+                <a href="/dashboard/marketplace" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest transition-all hover:-translate-x-1 mb-6">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    Kembali ke Marketplace
+                </a>
+                <h1 class="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">Complete your Order</h1>
+                <p class="text-sm md:text-base text-slate-500 dark:text-slate-400 mt-3 font-medium">Review your order details and securely checkout.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- LEFT COL: Checkout Form -->
+                <div class="lg:col-span-7 space-y-6 animate-enter" style="animation-delay: 0.1s; opacity: 0;">
+                    
+                    <!-- 1. Product Summary Block -->
+                    <div class="bg-white dark:bg-[#0A0A0F] rounded-[2rem] p-6 sm:p-8 border border-slate-200 dark:border-slate-800/80 shadow-lg shadow-slate-200/20 dark:shadow-none">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-6">
+                            <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-slate-50 dark:bg-[#12121A] flex items-center justify-center shadow-inner border border-slate-100 dark:border-slate-800 shrink-0 p-4 relative overflow-hidden group">
+                                <div class="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
+                                <% if (product.iconSVG) { %>
+                                    <div class="w-12 h-12 sm:w-16 sm:h-16 text-blue-600 dark:text-blue-500 group-hover:scale-110 transition-transform duration-500"><%- product.iconSVG %></div>
+                                <% } else if (product.image && product.image !== '/img/default-product.png') { %>
+                                    <img src="<%= product.image %>" class="w-full h-full object-cover rounded-2xl group-hover:scale-110 transition-transform duration-500">
+                                <% } else { %>
+                                    <svg class="w-12 h-12 text-blue-500 group-hover:scale-110 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                                <% } %>
+                            </div>
+                            <div class="flex-1">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest mb-3 border border-blue-100 dark:border-blue-500/20">
+                                    <%= product.category ? product.category.name : 'Premium Service' %>
+                                </div>
+                                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2 leading-tight"><%= product.name %></h2>
+                                <p class="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed"><%= product.description %></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Configuration Form (Pterodactyl Only) -->
+                    <% if (product.category && product.category.type === 'pterodactyl') { %>
+                    <div class="bg-white dark:bg-[#0A0A0F] rounded-[2rem] p-6 sm:p-8 border border-slate-200 dark:border-slate-800/80 shadow-lg shadow-slate-200/20 dark:shadow-none">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">1</span>
+                                    Konfigurasi Server
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-1 ml-8">Detail kredensial untuk login ke Panel Pterodactyl</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-5 pl-8">
+                            <!-- Username Field -->
+                            <div class="checkout-input">
+                                <label class="text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest block mb-2">Username Server <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    </div>
+                                    <input type="text" x-model="serverUsername" required
+                                           class="w-full bg-slate-50 dark:bg-[#12121A] border-2 border-slate-200 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-0 focus:border-blue-500 transition-colors"
+                                           placeholder="Ketik username unik Anda...">
+                                </div>
+                                <p x-show="serverUsername.length > 0 && serverUsername.length < 3" x-collapse class="text-[10px] text-red-500 mt-2 font-bold ml-1">Minimal 3 karakter</p>
+                            </div>
+
+                            <!-- Password Field -->
+                            <div class="checkout-input">
+                                <label class="text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest block mb-2">Password Server <span class="text-slate-400 normal-case font-medium tracking-normal">(Opsional)</span></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    </div>
+                                    <input type="password" x-model="serverPassword" 
+                                           class="w-full bg-slate-50 dark:bg-[#12121A] border-2 border-slate-200 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-0 focus:border-blue-500 transition-colors"
+                                           placeholder="Biarkan kosong untuk password acak">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+
+                    <!-- 3. Payment Method -->
+                    <div class="bg-white dark:bg-[#0A0A0F] rounded-[2rem] p-6 sm:p-8 border border-slate-200 dark:border-slate-800/80 shadow-lg shadow-slate-200/20 dark:shadow-none">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs"><%= (product.category && product.category.type === 'pterodactyl') ? '2' : '1' %></span>
+                                    Metode Pembayaran
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-1 ml-8">Pilih cara Anda ingin membayar pesanan ini</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
+                            
+                            <!-- Balance -->
+                            <button @click="paymentMethod = 'balance'" 
+                                    :disabled="<%= user.balance < product.price %>"
+                                    class="relative p-5 rounded-3xl border-2 text-left transition-all duration-300 group overflow-hidden"
+                                    :class="paymentMethod === 'balance' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 shadow-lg shadow-blue-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50 dark:bg-[#12121A] disabled:opacity-50 disabled:cursor-not-allowed'">
+                                
+                                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                
+                                <div class="relative z-10 flex items-start justify-between">
+                                    <div class="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-slate-100 dark:border-slate-800">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                    </div>
+                                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                         :class="paymentMethod === 'balance' ? 'border-blue-500 bg-blue-500' : 'border-slate-300 dark:border-slate-700'">
+                                        <div x-show="paymentMethod === 'balance'" class="w-2 h-2 bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div class="relative z-10 mt-4">
+                                    <h4 class="font-black text-slate-900 dark:text-white text-base">Saldo Akun</h4>
+                                    <p class="text-xs font-bold text-slate-500 mt-1">Sisa: Rp <%= user.balance.toLocaleString('id-ID') %></p>
+                                    <% if (user.balance < product.price) { %>
+                                        <span class="inline-block mt-2 px-2 py-0.5 bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[9px] font-black uppercase tracking-widest rounded-md">Saldo Tidak Cukup</span>
+                                    <% } %>
+                                </div>
+                            </button>
+
+                            <!-- QRIS -->
+                            <button @click="paymentMethod = 'qris'" 
+                                    class="relative p-5 rounded-3xl border-2 text-left transition-all duration-300 group overflow-hidden"
+                                    :class="paymentMethod === 'qris' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 shadow-lg shadow-emerald-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50 dark:bg-[#12121A]'">
+                                
+                                <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                
+                                <div class="relative z-10 flex items-start justify-between">
+                                    <div class="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm border border-slate-100 dark:border-slate-800">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                                    </div>
+                                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                         :class="paymentMethod === 'qris' ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 dark:border-slate-700'">
+                                        <div x-show="paymentMethod === 'qris'" class="w-2 h-2 bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div class="relative z-10 mt-4">
+                                    <h4 class="font-black text-slate-900 dark:text-white text-base">QRIS Otomatis</h4>
+                                    <p class="text-xs font-bold text-slate-500 mt-1">OVO, Dana, GoPay, BCA</p>
+                                    <span class="inline-block mt-2 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-md">Instan 24/7</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COL: Summary Floating Sidebar -->
+                <div class="lg:col-span-5 lg:sticky lg:top-24 space-y-6 animate-enter" style="animation-delay: 0.2s; opacity: 0;">
+                    
+                    <div class="bg-white dark:bg-[#0A0A0F] rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800/80 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative">
+                        <!-- Decorative bg -->
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                        <h3 class="text-lg font-black text-slate-900 dark:text-white mb-6 relative z-10">Ringkasan Pembayaran</h3>
+                        
+                        <div class="space-y-4 mb-6 relative z-10">
+                            <div class="flex justify-between items-center text-sm font-bold">
+                                <span class="text-slate-500">Harga Produk</span>
+                                <span class="text-slate-900 dark:text-white">Rp <%= (typeof basePrice !== 'undefined' ? basePrice : product.price).toLocaleString('id-ID') %></span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm font-bold">
+                                <span class="text-slate-500">Biaya Admin</span>
+                                <span class="text-emerald-500"><%- (typeof adminFee !== 'undefined' && adminFee > 0) ? '+ Rp ' + adminFee.toLocaleString('id-ID') : 'Gratis' %></span>
+                            </div>
+                        </div>
+
+                        <!-- Voucher Code -->
+                        <div class="mb-6 relative z-10">
+                            <div class="flex items-center gap-2 bg-slate-50 dark:bg-[#12121A] p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+                                <input type="text" x-model="voucher" placeholder="KODE VOUCHER" class="flex-1 bg-transparent border-none focus:ring-0 text-xs font-black uppercase text-slate-900 dark:text-white placeholder:text-slate-400 px-2 uppercase">
+                                <button class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors">Terapkan</button>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-dashed border-slate-200 dark:border-slate-800 pt-6 mb-8 relative z-10">
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pembayaran</p>
+                                    <p class="text-3xl font-black text-blue-600 dark:text-blue-500 leading-none">Rp <%= (typeof totalPrice !== 'undefined' ? totalPrice : product.price).toLocaleString('id-ID') %></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button @click="processOrder()" 
+                                :disabled="loading || !isFormValid"
+                                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 px-6 rounded-2xl shadow-xl shadow-blue-600/20 hover:shadow-blue-500/40 transition-all active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-3 group relative overflow-hidden z-10">
+                            
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]"></div>
+
+                            <template x-if="!loading">
+                                <span class="flex items-center justify-between w-full">
+                                    <span>Bayar Sekarang</span>
+                                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                </span>
+                            </template>
+                            <template x-if="loading">
+                                <span class="flex items-center gap-3">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Memproses...
+                                </span>
+                            </template>
+                        </button>
+                    </div>
+
+                    <!-- Trust Indicators -->
+                    <div class="flex items-center justify-center gap-6 mt-6 opacity-70">
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            Secure 256-bit
+                        </div>
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Instant Delivery
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init();
+    </script>
+</body>
+</html>
