@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-300">
+
+    <%- include('../../partials/admin-sidebar') %>
+
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-white/50 dark:bg-slate-800/50 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 transition-colors shrink-0">
+            <div class="flex items-center gap-4">
+                <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 class="text-xl font-black tracking-tight">Live Support</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-slate-400 text-xs font-bold uppercase tracking-widest hidden sm:block">Support Center</span>
+            </div>
+        </header>
+
+        <div class="flex-1 p-4 sm:p-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6" x-data="{ 
+                    activeSession: null, 
+                    chats: <%= JSON.stringify(chats) %>,
+                    messages: [],
+                    input: '',
+                    socket: null,
+                    init() {
+                        this.socket = io();
+                        this.socket.on('admin-update-chat', () => { window.location.reload(); });
+                        this.socket.on('new-message', (msg) => {
+                            if(this.activeSession && msg.sessionId === this.activeSession.sessionId) {
+                                const isDuplicate = this.messages.some(m => m.content === msg.content && m.timestamp === msg.timestamp);
+                                if (!isDuplicate) {
+                                    this.messages.push(msg);
+                                    this.scrollToBottom();
+                                }
+                            }
+                        });
+                    },
+                    async selectSession(chat) {
+                        this.activeSession = chat;
+                        const res = await fetch(`/admin/support/session/${chat.sessionId}`);
+                        const data = await res.json();
+                        this.messages = data.messages;
+                        this.socket.emit('admin-join', { sessionId: chat.sessionId });
+                        this.scrollToBottom();
+                    },
+                    sendMessage() {
+                        if(!this.input.trim() || !this.activeSession) return;
+                        this.socket.emit('send-message', { 
+                            sessionId: this.activeSession.sessionId, 
+                            content: this.input,
+                            role: 'admin'
+                        });
+                        this.input = '';
+                    },
+                    scrollToBottom() {
+                        setTimeout(() => {
+                            const container = document.getElementById('admin-chat-container');
+                            if(container) container.scrollTop = container.scrollHeight;
+                        }, 100);
+                    }
+                }" x-init="init()">
+                    
+                    <!-- Chat Session List -->
+                    <div class="lg:col-span-4 flex flex-col gap-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">Active Sessions</h2>
+                            <span class="px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black rounded-lg" x-text="chats.length"></span>
+                        </div>
+                        <template x-for="chat in chats">
+                            <button @click="selectSession(chat)" 
+                                    :class="activeSession?.sessionId === chat.sessionId ? 'border-blue-600 ring-4 ring-blue-600/10 bg-white dark:bg-slate-800' : 'border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-[#12121A]/50'"
+                                    class="w-full text-left p-4 rounded-2xl border-2 transition-all hover:scale-[1.01] active:scale-95 group relative overflow-hidden">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div :class="{
+                                            'bg-emerald-500': chat.status === 'admin_joined',
+                                            'bg-amber-500 animate-pulse': chat.status === 'waiting_admin',
+                                            'bg-blue-500': chat.status === 'active'
+                                        }" class="w-2 h-2 rounded-full shrink-0"></div>
+                                        <span class="text-[10px] font-black uppercase tracking-tighter text-slate-400 truncate max-w-[120px]" x-text="chat.sessionId"></span>
+                                    </div>
+                                    <span class="text-[9px] font-black text-slate-400 shrink-0" x-text="new Date(chat.lastActivity).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 font-black text-xs shrink-0">G</div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-black text-sm text-slate-900 dark:text-white truncate" x-text="chat.guestInfo?.name || 'Guest User'"></h4>
+                                        <p class="text-xs text-slate-500 truncate mt-0.5" x-text="chat.messages[chat.messages.length - 1]?.content || 'No messages yet'"></p>
+                                    </div>
+                                </div>
+                            </button>
+                        </template>
+                        <template x-if="chats.length === 0">
+                            <div class="text-center py-12 text-slate-400 text-sm">No active sessions</div>
+                        </template>
+                    </div>
+
+                    <!-- Chat Window -->
+                    <div class="lg:col-span-8 bg-white dark:bg-[#12121A] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col" style="min-height:500px; max-height:80vh;">
+                        <template x-if="!activeSession">
+                            <div class="flex-1 flex flex-col items-center justify-center text-center p-12">
+                                <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-[2rem] flex items-center justify-center mb-6">
+                                    <svg class="w-10 h-10 text-slate-200 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                </div>
+                                <h3 class="text-lg font-black text-slate-900 dark:text-white mb-2">Pilih Sesi</h3>
+                                <p class="text-slate-500 text-sm max-w-xs">Klik sesi dari daftar kiri untuk mulai membalas.</p>
+                            </div>
+                        </template>
+
+                        <template x-if="activeSession">
+                            <div class="flex flex-col h-full">
+                                <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 rounded-t-2xl">
+                                    <div>
+                                        <h3 class="font-black text-sm" x-text="activeSession.sessionId"></h3>
+                                        <p class="text-[10px] font-bold text-slate-500" x-text="activeSession.status"></p>
+                                    </div>
+                                </div>
+                                <div id="admin-chat-container" class="flex-1 overflow-y-auto p-5 space-y-3 bg-slate-50/30 dark:bg-transparent">
+                                    <template x-for="msg in messages">
+                                        <div :class="msg.role === 'admin' ? 'flex justify-end' : 'flex justify-start'">
+                                            <div :class="{
+                                                'bg-blue-600 text-white rounded-tr-none': msg.role === 'admin',
+                                                'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200 dark:border-slate-700': msg.role !== 'admin',
+                                                'opacity-70': msg.role === 'model'
+                                            }" class="max-w-[75%] px-4 py-3 rounded-2xl shadow-sm">
+                                                <span class="text-[8px] font-black uppercase tracking-widest opacity-50 block mb-1" x-text="msg.role"></span>
+                                                <p class="text-sm font-medium leading-relaxed" x-text="msg.content"></p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="p-4 border-t border-slate-100 dark:border-slate-800">
+                                    <div class="flex gap-3">
+                                        <input type="text" x-model="input" @keyup.enter="sendMessage()" placeholder="Ketik balasan..." class="flex-1 bg-slate-100 dark:bg-slate-900 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                                        <button @click="sendMessage()" class="bg-blue-600 text-white px-6 rounded-xl font-black hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-600/20 whitespace-nowrap">Send</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true });
+    </script>
+</body>
+</html>
+
+
