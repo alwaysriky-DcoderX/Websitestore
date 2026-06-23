@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/output.css?v=2">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    </style>
+    <script>
+        window.uiCore = {
+            toggleTheme: function () {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            },
+            toggleSidebar: function () {
+                const sidebar = document.getElementById('app-sidebar');
+                const overlay = document.getElementById('app-overlay');
+                if(sidebar && overlay) {
+                    sidebar.classList.toggle('-translate-x-full');
+                    overlay.classList.toggle('hidden');
+                    overlay.classList.toggle('opacity-0');
+                }
+            }
+        };
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-slate-800/50 backdrop-blur border-b border-slate-700 flex items-center justify-between px-6">
+            <div>
+                <h1 class="text-xl font-bold">Stock Management</h1>
+                <p class="text-xs text-slate-400"><%= product.name %></p>
+            </div>
+            <a href="/admin/products" class="text-slate-400 hover:text-white transition-colors">Back to Products</a>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Add Stock Form -->
+            <div class="md:col-span-1">
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 p-6 shadow-xl">
+                    <h3 class="text-lg font-bold mb-4">Add Account Stock</h3>
+                    <form action="/admin/products/stock/<%= product.id %>" method="POST" class="space-y-4">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Email / ID</label>
+                            <input type="text" name="email" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="user@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Password / Key</label>
+                            <input type="text" name="password" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="secret123">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Catatan Khusus (Optional)</label>
+                            <input type="text" name="specialNotes" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Jangan ganti profil">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl transition-colors">
+                            Add to Stock
+                        </button>
+                    </form>
+
+                    <div class="mt-8 pt-8 border-t border-slate-700">
+                        <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Summary</h4>
+                        <div class="flex justify-between items-center bg-slate-900 p-4 rounded-xl">
+                            <span class="text-slate-400">Total Available</span>
+                            <span class="text-2xl font-bold text-green-400"><%= product.accounts.filter(a => a.status === 'available').length %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock List -->
+            <div class="md:col-span-2">
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/50 border-b border-slate-700">
+                                <th class="py-3 px-6 text-slate-400 font-medium text-sm">Account</th>
+                                <th class="py-3 px-6 text-slate-400 font-medium text-sm">Password</th>
+                                <th class="py-3 px-6 text-slate-400 font-medium text-sm">Notes</th>
+                                <th class="py-3 px-6 text-slate-400 font-medium text-sm">Status</th>
+                                <th class="py-3 px-6 text-slate-400 font-medium text-sm">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700">
+                            <% product.accounts.forEach(acc => { %>
+                                <tr class="hover:bg-slate-700/20 transition-colors">
+                                    <td class="py-3 px-6 text-sm text-white"><%= acc.email %></td>
+                                    <td class="py-3 px-6 text-sm text-slate-400 font-mono"><%= acc.password %></td>
+                                    <td class="py-3 px-6 text-sm text-slate-500 italic"><%= acc.specialNotes || '-' %></td>
+                                    <td class="py-3 px-6 text-sm">
+                                        <% if(acc.status === 'available') { %>
+                                            <span class="px-2 py-0.5 bg-green-900/40 text-green-400 text-[10px] font-bold rounded-full uppercase">Available</span>
+                                        <% } else { %>
+                                            <span class="px-2 py-0.5 bg-red-900/40 text-red-400 text-[10px] font-bold rounded-full uppercase">Sold</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="py-3 px-6 text-sm">
+                                        <form action="/admin/products/stock/<%= product.id %>/delete/<%= acc.id %>" method="POST" onsubmit="return confirm('Remove this account?')">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <button type="submit" class="text-red-400 hover:text-red-300">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                            <% if(product.accounts.length === 0) { %>
+                                <tr><td colspan="5" class="py-8 text-center text-slate-500">Stock is empty.</td></tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</body>
+</html>
+
+
+
