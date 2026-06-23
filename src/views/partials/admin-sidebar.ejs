@@ -1,0 +1,46 @@
+<div id="app-overlay" onclick="window.uiCore.toggleSidebar()" class="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300"></div>
+
+<!-- Sidebar -->
+<aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-[#09090B] border-r border-slate-200 dark:border-slate-800 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 shadow-2xl lg:shadow-none">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <a href="/" class="flex items-center gap-2 text-xl font-black bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-500 bg-clip-text text-transparent">
+            <img src="<%= settings.web_logo %>" alt="Logo" class="w-8 h-8 object-contain rounded-lg shadow-lg">
+            <span class="text-slate-900 dark:text-white"><%= settings.web_name %></span>
+        </a>
+        <button onclick="window.uiCore.toggleSidebar()" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-xl transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+        <p class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-2">Management</p>
+        <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Overview') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Dashboard
+        </a>
+        <a href="/admin/products" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Product') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Products
+        </a>
+        <a href="/admin/categories" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Categor') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Categories
+        </a>
+        <a href="/admin/nodes" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Node') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Nodes (PLTA)
+        </a>
+        <a href="/admin/vouchers" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Voucher') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Vouchers
+        </a>
+        <a href="/admin/settings" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Setting') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Settings
+        </a>
+        <a href="/admin/nokos" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Nokos') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Nokos / OTP
+        </a>
+        <a href="/admin/support" class="flex items-center gap-3 px-3 py-2.5 <%= title.includes('Support') ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' %> rounded-xl font-bold transition-colors">
+            Live Support
+        </a>
+    </nav>
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 shrink-0">
+        <a href="/dashboard" class="flex items-center justify-center w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition-all active:scale-[0.98]">
+            Exit Admin
+        </a>
+    </div>
+</aside>
