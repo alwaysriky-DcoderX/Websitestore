@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 transition-colors">
+            
+            <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white">Discount Vouchers</h1>
+            <button onclick="document.getElementById('addVoucherModal').classList.remove('hidden')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
+                + Create Voucher
+            </button>
+        </header>
+
+        <div class="flex-1 p-4 sm:p-6">
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800">
+                <table class="min-w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                            <th class="py-3 px-6 text-slate-400 font-medium text-sm">Code</th>
+                            <th class="py-3 px-6 text-slate-400 font-medium text-sm">Discount</th>
+                            <th class="py-3 px-6 text-slate-400 font-medium text-sm">Min Purchase</th>
+                            <th class="py-3 px-6 text-slate-400 font-medium text-sm">Usage</th>
+                            <th class="py-3 px-6 text-slate-400 font-medium text-sm">Types</th>
+                            <th class="py-3 px-6 text-slate-400 font-medium text-sm">Expiry</th>
+                            <th class="py-3 px-6 text-slate-400 font-medium text-sm">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                        <% vouchers.forEach(v => { %>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                                <td class="py-4 px-6 text-sm font-mono text-blue-600 dark:text-blue-400 font-bold uppercase"><%= v.code %></td>
+                                <td class="py-3 px-6 text-sm text-slate-900 dark:text-white font-bold">
+                                    <%= v.discountType === 'percentage' ? v.discountValue + '%' : 'Rp ' + v.discountValue.toLocaleString('id-ID') %>
+                                </td>
+                                <td class="py-3 px-6 text-sm text-slate-400">Rp <%= v.minPurchase.toLocaleString('id-ID') %></td>
+                                <td class="py-3 px-6 text-sm text-slate-400">
+                                    <%= v.usedCount %> / <%= v.maxUsage === -1 ? '∞' : v.maxUsage %>
+                                </td>
+                                <td class="py-3 px-6 text-sm">
+                                    <div class="flex flex-wrap gap-1">
+                                        <% (v.applicableTypes || ['all']).forEach(t => { %>
+                                            <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] font-black uppercase rounded text-slate-500"><%= t %></span>
+                                        <% }) %>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-6 text-sm text-slate-400">
+                                    <%= v.expiryDate ? new Date(v.expiryDate).toLocaleDateString('id-ID') : 'Never' %>
+                                </td>
+                                <td class="py-3 px-6 text-sm">
+                                    <a href="/admin/vouchers/delete/<%= v.id %>" class="text-red-400 hover:text-red-300" onclick="return confirm('Are you sure?')">Delete</a>
+                                </td>
+                            </tr>
+                        <% }) %>
+                        <% if(vouchers.length === 0) { %>
+                            <tr><td colspan="7" class="py-8 text-center text-slate-500">No vouchers found.</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Voucher Modal -->
+    <div id="addVoucherModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl my-auto">
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Create New Voucher</h3>
+            <form action="/admin/vouchers" method="POST" class="space-y-4">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Voucher Code</label>
+                    <input type="text" name="code" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none uppercase" placeholder="PROMO2024">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Type</label>
+                        <select name="discountType" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="fixed">Fixed Amount (Rp)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Value</label>
+                        <input type="number" name="discountValue" required class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Min Purchase</label>
+                        <input type="number" name="minPurchase" value="0" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">Max Usage (-1=∞)</label>
+                        <input type="number" name="maxUsage" value="-1" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Expiry Date (Optional)</label>
+                    <input type="date" name="expiryDate" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">Applicable Product Types</label>
+                    <div class="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-bold">
+                            <input type="checkbox" name="applicableTypes" value="all" checked class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600"> All
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-bold">
+                            <input type="checkbox" name="applicableTypes" value="pterodactyl" class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600"> Pterodactyl
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-bold">
+                            <input type="checkbox" name="applicableTypes" value="premium_app" class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600"> Premium App
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-bold">
+                            <input type="checkbox" name="applicableTypes" value="script" class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600"> Script
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">Applicable Products</label>
+                    <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white">
+                            <input type="checkbox" name="applicableTypes" value="all" checked class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500">
+                            All Products
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white">
+                            <input type="checkbox" name="applicableTypes" value="pterodactyl" class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500">
+                            Panels (Ptero)
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white">
+                            <input type="checkbox" name="applicableTypes" value="premium_app" class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500">
+                            Premium Apps
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white">
+                            <input type="checkbox" name="applicableTypes" value="script" class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500">
+                            Source Code/Script
+                        </label>
+                    </div>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" onclick="document.getElementById('addVoucherModal').classList.add('hidden')" class="flex-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white font-semibold py-2 rounded-xl transition-colors">Cancel</button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl transition-colors">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+
+
