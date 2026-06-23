@@ -1,0 +1,16 @@
+<div class="mx-auto max-w-lg px-4 py-16 text-center" data-aos="zoom-in">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 mb-6 relative">
+        <!-- Pulse effect -->
+        <span class="absolute inset-0 rounded-[2rem] bg-blue-500/20 animate-ping opacity-75"></span>
+        <svg class="w-10 h-10 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+    </div>
+    <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Stok Sedang Dipersiapkan</h3>
+    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+        Tim kami sedang menyiapkan inventori terbaik untuk kategori <strong class="text-blue-600 dark:text-blue-400"><%= categoryName %></strong>. Hubungi admin via Telegram jika Anda membutuhkan request khusus atau kustomisasi server!
+    </p>
+    <a href="https://t.me/<%= settings.telegram_channel_id || '' %>" target="_blank"
+       class="inline-flex items-center gap-2 px-6 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-600 hover:text-white transition-all shadow-lg active:scale-95">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+        Hubungi Admin Telegram
+    </a>
+</div>
