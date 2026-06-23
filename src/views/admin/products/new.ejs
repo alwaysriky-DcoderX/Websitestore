@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/output.css?v=2">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    </style>
+    <script>
+        window.uiCore = {
+            toggleTheme: function () {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            },
+            toggleSidebar: function () {
+                const sidebar = document.getElementById('app-sidebar');
+                const overlay = document.getElementById('app-overlay');
+                if(sidebar && overlay) {
+                    sidebar.classList.toggle('-translate-x-full');
+                    overlay.classList.toggle('hidden');
+                    overlay.classList.toggle('opacity-0');
+                }
+            }
+        };
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+    
+    <%- include('../../partials/admin-sidebar') %>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="h-16 bg-slate-800/50 backdrop-blur border-b border-slate-700 flex items-center justify-between px-6">
+            
+            <button onclick="window.uiCore.toggleSidebar()" class="p-2 -ml-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all active:scale-95">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-bold">Add New Product</h1>
+            <a href="/admin/products" class="text-slate-400 hover:text-white transition-colors">
+                Cancel
+            </a>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <form action="/admin/products" method="POST" class="max-w-4xl bg-slate-800 rounded-2xl border border-slate-700 p-8 shadow-xl space-y-8">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                
+                <!-- Basic Info -->
+                <div>
+                    <h2 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Basic Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Product Name</label>
+                            <input type="text" name="name" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. 1GB Node.js">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Category</label>
+                            <select name="category" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <% categories.forEach(cat => { %>
+                                    <option value="<%= cat.id %>"><%= cat.name %> (<%= cat.type %>)</option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                            <textarea name="description" rows="3" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Product description..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Base Price (Rp)</label>
+                            <input type="number" name="price" required class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="15000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pterodactyl Config (Optional) -->
+                <div>
+                    <h2 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2 text-purple-400">Pterodactyl Config (Optional)</h2>
+                    <p class="text-xs text-slate-400 mb-4">Only fill this if creating a Pterodactyl panel product.</p>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Select Node (PLTA)</label>
+                        <select id="node-selector" name="pteroNode" onchange="updateNodeDetails()" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 outline-none">
+                            <option value="">-- Manual Config / Select Node --</option>
+                            <% nodes.forEach(node => { %>
+                                <option value="<%= node.id %>" data-nodeid="<%= node.nodeId %>" data-eggid="<%= node.eggId %>" data-nestid="<%= node.nestId %>">
+                                    <%= node.name %> (Node: <%= node.nodeId %>)
+                                </option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">RAM (MB)</label>
+                            <input type="number" name="pteroMemory" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="1024">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">CPU (%)</label>
+                            <input type="number" name="pteroCpu" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="100">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Disk (MB)</label>
+                            <input type="number" name="pteroDisk" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="1024">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Node ID</label>
+                            <input type="number" name="pteroNodeId" id="pteroNodeId" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Egg ID</label>
+                            <input type="number" name="pteroEggId" id="pteroEggId" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="15">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Nest ID</label>
+                            <input type="number" name="pteroNestId" id="pteroNestId" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="5">
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function updateNodeDetails() {
+                        const selector = document.getElementById('node-selector');
+                        const selectedOption = selector.options[selector.selectedIndex];
+                        
+                        if (selectedOption.value === "") return;
+
+                        document.getElementById('pteroNodeId').value = selectedOption.getAttribute('data-nodeid');
+                        document.getElementById('pteroEggId').value = selectedOption.getAttribute('data-eggid');
+                        document.getElementById('pteroNestId').value = selectedOption.getAttribute('data-nestid');
+                    }
+                </script>
+
+                <!-- Digital Download Config (Optional) -->
+                <div>
+                    <h2 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2 text-blue-400">Digital Download Config (Optional)</h2>
+                    <p class="text-xs text-slate-400 mb-4">Only fill this if creating a Premium App or Source Code product.</p>
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Download URL / Link</label>
+                            <input type="url" name="downloadUrl" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="https://drive.google.com/...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Digital Instructions (Optional)</label>
+                            <textarea name="digitalInstructions" rows="2" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Extract the zip file and..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-700">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all">
+                        Save Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+
+
+
