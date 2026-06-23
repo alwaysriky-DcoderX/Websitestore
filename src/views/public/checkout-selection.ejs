@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased min-h-screen">
+    <div class="max-w-2xl mx-auto px-4 py-12">
+        <div class="mb-12 text-center" data-aos="fade-down">
+            <h1 class="text-4xl font-black text-slate-900 dark:text-white mb-2">Finalize Order</h1>
+            <p class="text-slate-500 dark:text-slate-400 font-medium">Choose your preferred payment method</p>
+        </div>
+        
+        <div class="bg-white dark:bg-[#12121A] rounded-[24px] p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none" data-aos="fade-up">
+            <div class="mb-8 border-b border-slate-100 dark:border-slate-800/60 pb-8">
+                <h3 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Order Summary</h3>
+                <div class="flex items-center justify-between">
+                    <p class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white"><%= product.name %></p>
+                    <div class="text-right">
+                        <p id="original-price" class="text-2xl font-black text-blue-600 dark:text-blue-500">Rp <%= product.price.toLocaleString('id-ID') %></p>
+                        <p id="discounted-price" class="text-2xl font-black text-emerald-600 dark:text-emerald-500 hidden"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voucher Section -->
+            <div class="mb-8">
+                <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Have a Voucher?</label>
+                <div class="flex gap-2">
+                    <input type="text" id="voucher-input" value="<%= voucherCode %>" class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none uppercase transition-all" placeholder="ENTER CODE">
+                    <button type="button" onclick="applyVoucher()" class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black px-6 py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-slate-900/10 dark:shadow-white/10">Apply</button>
+                </div>
+                <p id="voucher-message" class="text-sm mt-2 font-medium hidden"></p>
+            </div>
+
+            <form action="/checkout/process" method="POST" class="space-y-6">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="productId" value="<%= product.id %>">
+                <input type="hidden" name="serverUsername" value="<%= serverUsername %>">
+                <input type="hidden" name="serverPassword" value="<%= serverPassword %>">
+                <input type="hidden" name="voucherCode" id="hidden-voucher-code" value="<%= voucherCode %>">
+                <input type="hidden" name="target" value="<%= target %>">
+                <input type="hidden" name="quantity" value="<%= quantity %>">
+                <input type="hidden" name="customData" value="<%= customData %>">
+                <% if(guestContact) { %>
+                    <input type="hidden" name="guestContact" value="<%= guestContact %>">
+                <% } %>
+
+                <div class="space-y-4">
+                    <% if(user) { %>
+                    <!-- Pay with Balance -->
+                    <label class="relative flex cursor-pointer rounded-2xl border-2 p-5 sm:p-6 shadow-sm focus:outline-none transition-all border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 group has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/30 dark:has-[:checked]:bg-blue-900/10">
+                        <input type="radio" name="paymentMethod" value="balance" class="sr-only" required>
+                        <span class="flex flex-1">
+                            <span class="flex flex-col">
+                                <span class="block text-lg font-black text-slate-900 dark:text-white group-has-[:checked]:text-blue-700 dark:group-has-[:checked]:text-blue-400">Account Balance</span>
+                                <span class="mt-1 flex items-center text-sm text-slate-500 font-medium">Available: Rp <%= user.balance.toLocaleString('id-ID') %></span>
+                                <% if(user.balance < product.price) { %>
+                                    <span class="text-xs text-red-500 dark:text-red-400 mt-2 font-bold flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                                        Insufficient balance
+                                    </span>
+                                <% } %>
+                            </span>
+                        </span>
+                        <div class="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 group-has-[:checked]:border-blue-600 group-has-[:checked]:bg-blue-600 flex items-center justify-center transition-all">
+                            <svg class="h-4 w-4 text-white hidden group-has-[:checked]:block" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </label>
+                    <% } %>
+
+                    <!-- Pay with QRIS -->
+                    <label class="relative flex cursor-pointer rounded-2xl border-2 p-5 sm:p-6 shadow-sm focus:outline-none transition-all border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 group has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/30 dark:has-[:checked]:bg-blue-900/10">
+                        <input type="radio" name="paymentMethod" value="qris" class="sr-only" required <%= !user ? 'checked' : '' %>>
+                        <span class="flex flex-1">
+                            <span class="flex flex-col">
+                                <span class="block text-lg font-black text-slate-900 dark:text-white group-has-[:checked]:text-blue-700 dark:group-has-[:checked]:text-blue-400">QRIS Auto-Detect</span>
+                                <span class="mt-1 flex items-center text-sm text-slate-500 font-medium">Scan with GoPay, Dana, OVO, ShopeePay</span>
+                            </span>
+                        </span>
+                        <div class="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 group-has-[:checked]:border-blue-600 group-has-[:checked]:bg-blue-600 flex items-center justify-center transition-all">
+                            <svg class="h-4 w-4 text-white hidden group-has-[:checked]:block" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="pt-8">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-6 rounded-2xl shadow-xl shadow-blue-600/30 transition-all active:scale-[0.98]">
+                        Complete Order & Pay
+                    </button>
+                    <a href="javascript:history.back()" class="block text-center mt-6 text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold transition-colors">Go Back</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true });
+
+        window.onload = () => {
+            const initialCode = '<%= voucherCode %>';
+            if(initialCode) applyVoucher();
+        };
+
+        async function applyVoucher() {
+            const code = document.getElementById('voucher-input').value.trim();
+            const messageEl = document.getElementById('voucher-message');
+            const originalPriceEl = document.getElementById('original-price');
+            const discountedPriceEl = document.getElementById('discounted-price');
+            const hiddenVoucherEl = document.getElementById('hidden-voucher-code');
+
+            if (!code) return;
+
+            try {
+                const response = await axios.post('/checkout/validate-voucher', { 
+                    code, 
+                    productId: '<%= product.id %>',
+                    _csrf: '<%= csrfToken %>'
+                });
+
+                const { success, message, newPrice, discount } = response.data;
+
+                messageEl.classList.remove('hidden', 'text-red-500', 'text-emerald-600', 'dark:text-red-400', 'dark:text-emerald-400');
+                if (success) {
+                    messageEl.textContent = `Voucher applied! Saved Rp ${discount.toLocaleString('id-ID')}`;
+                    messageEl.classList.add('text-emerald-600', 'dark:text-emerald-400');
+                    originalPriceEl.classList.add('line-through', 'text-slate-400', 'dark:text-slate-500', 'text-lg');
+                    originalPriceEl.classList.remove('text-2xl', 'text-blue-600', 'dark:text-blue-500');
+                    discountedPriceEl.textContent = `Rp ${newPrice.toLocaleString('id-ID')}`;
+                    discountedPriceEl.classList.remove('hidden');
+                    hiddenVoucherEl.value = code;
+                } else {
+                    messageEl.textContent = message;
+                    messageEl.classList.add('text-red-500', 'dark:text-red-400');
+                    resetVoucher();
+                }
+            } catch (err) {
+                messageEl.textContent = 'Error validating voucher.';
+                messageEl.classList.remove('hidden');
+                messageEl.classList.add('text-red-500', 'dark:text-red-400');
+                resetVoucher();
+            }
+        }
+
+        function resetVoucher() {
+            const originalPriceEl = document.getElementById('original-price');
+            const discountedPriceEl = document.getElementById('discounted-price');
+            const hiddenVoucherEl = document.getElementById('hidden-voucher-code');
+            
+            originalPriceEl.classList.remove('line-through', 'text-slate-400', 'dark:text-slate-500', 'text-lg');
+            originalPriceEl.classList.add('text-2xl', 'text-blue-600', 'dark:text-blue-500');
+            discountedPriceEl.classList.add('hidden');
+            hiddenVoucherEl.value = "";
+        }
+    </script>
+</body>
+</html>
