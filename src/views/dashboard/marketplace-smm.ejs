@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <%- include('../partials/head') %>
+</head>
+<body  class="bg-[#F4F7FA] dark:bg-[#09090B] text-slate-800 dark:text-slate-200 antialiased min-h-screen transition-colors duration-300">
+
+    <%- include('../partials/dashboard-navbar') %>
+    <%- include('../partials/user-sidebar') %>
+
+    <% 
+      const smmCategoriesSet = new Set();
+      let smmServicesSafe = [];
+      if (typeof smmServices !== 'undefined' && Array.isArray(smmServices)) {
+          smmServicesSafe = smmServices;
+          smmServices.forEach(s => {
+              if (s.category) smmCategoriesSet.add(s.category);
+          });
+      }
+      const smmServiceCategories = Array.from(smmCategoriesSet).sort();
+    %>
+
+    <div class="sm:ml-64 bg-slate-50 dark:bg-[#0B0E1A] min-h-screen text-slate-800 dark:text-slate-200 transition-colors duration-300">
+        <main class="pt-16 min-h-screen flex flex-col w-full transition-all duration-300">
+        <div class="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-7xl mx-auto space-y-6 sm:space-y-8">
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-6 border-b border-slate-200/50 dark:border-slate-800/50">
+                <div data-aos="fade-right">
+                    <a href="/dashboard/marketplace" class="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-500 mb-4 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Kembali ke Hub
+                    </a>
+                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight"><%= title %></h1>
+                    <p class="text-sm font-medium text-slate-500 mt-1">Pesan layanan SMM Panel dengan mudah.</p>
+                </div>
+            </div>
+
+            <div class="w-full relative mt-6">
+                <% if (smmServicesSafe.length === 0) { %>
+                    <div class="py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-[#12121A] rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 shadow-sm transition-colors mt-6">
+                        <div class="w-20 h-20 bg-red-100 dark:bg-red-800/30 rounded-3xl flex items-center justify-center mx-auto mb-6 text-red-400 dark:text-red-500">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Layanan SMM Tidak Tersedia</h3>
+                        <% const smmErrDisplay = typeof smmError !== 'undefined' && smmError ? smmError : ''; %>
+                        <% if (smmErrDisplay && (smmErrDisplay.toLowerCase().includes('kredensial tidak valid') || smmErrDisplay.toLowerCase().includes('invalid') || smmErrDisplay.toLowerCase().includes('401'))) { %>
+                            <p class="text-sm text-red-500 dark:text-red-400 max-w-md mx-auto font-bold mb-2">⚠️ API Key tidak valid!</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">API Key SMM MedanPedia yang tersimpan sudah tidak valid atau salah. Silakan update API Key baru di <a href="/admin/settings" class="text-blue-500 hover:underline font-bold">Admin Settings</a>.</p>
+                        <% } else if (smmErrDisplay) { %>
+                            <p class="text-sm text-red-500 dark:text-red-400 max-w-md mx-auto font-bold mb-2">Error: <%= smmErrDisplay %></p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">Silakan periksa pengaturan API di <a href="/admin/settings" class="text-blue-500 hover:underline font-bold">Admin Settings</a>.</p>
+                        <% } else { %>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">Saat ini layanan SMM sedang dinonaktifkan atau terjadi masalah pada koneksi ke server pusat. Silakan periksa pengaturan API Anda.</p>
+                        <% } %>
+                    </div>
+                <% } else { %>
+                    <script id="smm-data-json" type="application/json">
+                        <%- JSON.stringify({ services: smmServicesSafe, categories: smmServiceCategories }).replace(/</g, '\\u003c') %>
+                    </script>
+                    <div class="relative bg-gradient-to-br from-white to-slate-50/80 dark:from-[#0E1626] dark:to-[#0B0E1A] rounded-[2.5rem] p-6 sm:p-8 border border-slate-200/80 dark:border-white/5 shadow-2xl shadow-blue-900/10 overflow-hidden group"
+                         x-data="{
+                           smmServices: [],
+                           smmCategories: [],
+                           init() {
+                               const data = JSON.parse(document.getElementById('smm-data-json').textContent);
+                               this.smmServices = data.services;
+                               this.smmCategories = data.categories;
+                           },
+                           selectedSmmCategory: '',
+                           selectedSmmServiceId: '',
+                           targetLink: '',
+                           quantity: 0,
+                           marginSmm: <%= typeof settings !== 'undefined' && settings.smm_margin ? Number(settings.smm_margin) : 0 %>, 
+                           get filteredServices() {
+                               if(!this.selectedSmmCategory) return [];
+                               return this.smmServices.filter(s => s.category === this.selectedSmmCategory);
+                           },
+                           get selectedServiceData() {
+                               if(!this.selectedSmmServiceId) return null;
+                               return this.smmServices.find(s => s.id == this.selectedSmmServiceId);
+                           },
+                           get totalPrice() {
+                               if(!this.selectedServiceData || !this.quantity) return 0;
+                               const basePrice = (this.selectedServiceData.price / 1000) * this.quantity;
+                               return Math.ceil(basePrice + ((basePrice * this.marginSmm) / 100));
+                           },
+                           checkoutSmm() {
+                               if(!this.selectedServiceData || !this.targetLink || this.quantity < this.selectedServiceData.min || this.quantity > this.selectedServiceData.max) {
+                                   alert('Pastikan semua form terisi dengan benar sesuai batas minimal/maksimal pesanan.');
+                                   return;
+                               }
+                               window.location.href = '/dashboard/checkout/smm/' + this.selectedServiceData.id + '?target=' + encodeURIComponent(this.targetLink) + '&qty=' + this.quantity;
+                           }
+                         }"
+                    >
+                        <div class="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/15 blur-[100px] rounded-full pointer-events-none"></div>
+                        <div class="relative z-10">
+                            <div class="flex flex-col mb-7">
+                                <div class="inline-flex self-start items-center gap-1.5 py-1 px-3 rounded-full text-[10px] font-black bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-500/20 uppercase tracking-wider mb-3">
+                                    SMM Center
+                                </div>
+                                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Social Media Panel</h2>
+                                <p class="text-sm text-slate-500 font-medium mt-1.5">Mendukung otomatisasi ke berbagai layanan social media di seluruh dunia.</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Category Select -->
+                                <div class="relative" x-data="{ open: false, search: '' }" @click.away="open = false">
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Pilih Kategori</label>
+                                    <div @click="open = !open" class="w-full bg-slate-50 dark:bg-[#181C2A] border-2 border-slate-200 dark:border-white/5 rounded-2xl px-5 py-4 text-sm font-bold cursor-pointer flex justify-between items-center transition-all text-slate-800 dark:text-white" :class="open ? 'ring-4 ring-blue-500/20 border-blue-500' : 'hover:border-slate-300 dark:hover:border-white/10'">
+                                        <span x-text="selectedSmmCategory || '-- Pilih Kategori --'" :class="!selectedSmmCategory && 'text-slate-400 truncate pr-4'" class="truncate pr-4"></span>
+                                        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 flex-shrink-0" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    
+                                    <div x-show="open" x-transition.opacity.duration.200ms class="absolute z-50 w-full mt-2 bg-white dark:bg-[#181C2A] border border-slate-200 dark:border-white/5 rounded-2xl shadow-xl overflow-hidden flex flex-col" style="display: none;">
+                                        <div class="p-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                                            <input type="text" x-model="search" placeholder="Cari kategori..." class="w-full bg-white dark:bg-[#0E1626] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 dark:text-white" @click.stop>
+                                        </div>
+                                        <ul class="max-h-60 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                                            <li @click="selectedSmmCategory = ''; selectedSmmServiceId = ''; quantity = 0; open = false;" class="px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-colors text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5">
+                                                -- Pilih Kategori --
+                                            </li>
+                                            <template x-for="cat in smmCategories.filter(c => c.toLowerCase().includes(search.toLowerCase()))" :key="cat">
+                                                <li @click="selectedSmmCategory = cat; selectedSmmServiceId = ''; quantity = 0; open = false; search = '';" class="px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-colors" :class="selectedSmmCategory === cat ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'">
+                                                    <span x-text="cat"></span>
+                                                </li>
+                                            </template>
+                                            <li x-show="smmCategories.filter(c => c.toLowerCase().includes(search.toLowerCase())).length === 0" class="px-4 py-3 text-center text-sm font-medium text-slate-400">
+                                                Kategori tidak ditemukan
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Service Select -->
+                                <div class="relative" x-data="{ open: false, search: '' }" @click.away="open = false">
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Pilih Layanan</label>
+                                    <div @click="if(selectedSmmCategory) open = !open" class="w-full bg-slate-50 dark:bg-[#181C2A] border-2 border-slate-200 dark:border-white/5 rounded-2xl px-5 py-4 text-sm font-bold flex justify-between items-center transition-all text-slate-800 dark:text-white" :class="!selectedSmmCategory ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer ' + (open ? 'ring-4 ring-blue-500/20 border-blue-500' : 'hover:border-slate-300 dark:hover:border-white/10')">
+                                        <span class="truncate pr-4" x-text="selectedServiceData ? selectedServiceData.name + ' - Rp ' + (selectedServiceData.price).toLocaleString('id-ID') + '/1000' : '-- Pilih Layanan --'" :class="!selectedSmmServiceId && 'text-slate-400'"></span>
+                                        <svg class="w-5 h-5 text-slate-400 transition-transform duration-200 flex-shrink-0" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    
+                                    <div x-show="open" x-transition.opacity.duration.200ms class="absolute z-50 w-full mt-2 bg-white dark:bg-[#181C2A] border border-slate-200 dark:border-white/5 rounded-2xl shadow-xl overflow-hidden flex flex-col" style="display: none;">
+                                        <div class="p-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                                            <input type="text" x-model="search" placeholder="Cari layanan..." class="w-full bg-white dark:bg-[#0E1626] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 dark:text-white" @click.stop>
+                                        </div>
+                                        <ul class="max-h-60 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                                            <li @click="selectedSmmServiceId = ''; quantity = 0; open = false;" class="px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-colors text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5">
+                                                -- Pilih Layanan --
+                                            </li>
+                                            <template x-for="srv in filteredServices.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))" :key="srv.id">
+                                                <li @click="selectedSmmServiceId = srv.id; quantity = srv.min; open = false; search = '';" class="px-4 py-3 rounded-xl cursor-pointer transition-colors" :class="selectedSmmServiceId === srv.id ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'hover:bg-slate-50 dark:hover:bg-white/5'">
+                                                    <div class="flex flex-col gap-1">
+                                                        <span class="text-sm font-bold text-slate-800 dark:text-slate-200" x-text="srv.name"></span>
+                                                        <div class="flex items-center gap-3">
+                                                            <span class="text-xs font-black text-blue-500" x-text="'Rp ' + (srv.price).toLocaleString('id-ID') + '/1000'"></span>
+                                                            <span class="text-[10px] font-bold text-slate-400" x-text="'Min: ' + srv.min + ' | Max: ' + srv.max"></span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </template>
+                                            <li x-show="filteredServices.filter(s => s.name.toLowerCase().includes(search.toLowerCase())).length === 0" class="px-4 py-3 text-center text-sm font-medium text-slate-400">
+                                                Layanan tidak ditemukan
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Target Link -->
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Link / Username Target</label>
+                                    <input type="text" x-model="targetLink" :disabled="!selectedSmmServiceId" placeholder="Masukkan url profile / postingan" class="w-full bg-slate-50 dark:bg-[#181C2A] border-2 border-slate-200 dark:border-white/5 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 dark:text-white disabled:opacity-50">
+                                </div>
+
+                                <!-- Quantity -->
+                                <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Jumlah Pesanan</label>
+                                    <input type="number" x-model.number="quantity" :disabled="!selectedSmmServiceId" :min="selectedServiceData ? selectedServiceData.min : 0" :max="selectedServiceData ? selectedServiceData.max : 0" class="w-full bg-slate-50 dark:bg-[#181C2A] border-2 border-slate-200 dark:border-white/5 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 dark:text-white disabled:opacity-50">
+                                    <p class="text-[10px] font-bold text-slate-400 mt-2" x-show="selectedServiceData">
+                                        Min: <span x-text="selectedServiceData?.min || 0"></span> | Max: <span x-text="selectedServiceData?.max || 0"></span>
+                                    </p>
+                                </div>
+
+                                <!-- Price Calculation & Checkout -->
+                                <div class="flex flex-col justify-end">
+                                    <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-2xl p-4 flex items-center justify-between">
+                                        <div>
+                                            <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Total Harga</p>
+                                            <p class="text-xl font-black text-slate-900 dark:text-white mt-0.5" x-text="'Rp ' + totalPrice.toLocaleString('id-ID')"></p>
+                                        </div>
+                                        <button @click="checkoutSmm()" :disabled="!selectedSmmServiceId || !targetLink || quantity < (selectedServiceData ? selectedServiceData.min : 0)" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-600/20 disabled:opacity-50 transition-all active:scale-95">
+                                            Pesan Sekarang
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Service Description -->
+                                <div class="md:col-span-2" x-show="selectedServiceData && selectedServiceData.description">
+                                    <div class="p-5 rounded-2xl bg-slate-100 dark:bg-[#181C2A] border border-slate-200 dark:border-white/5">
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Deskripsi Layanan</p>
+                                        <p class="text-sm font-medium text-slate-600 dark:text-slate-300 whitespace-pre-line" x-html="selectedServiceData?.description || ''"></p>
+                                        <p class="text-xs font-bold text-slate-500 mt-3" x-show="selectedServiceData?.average_time" x-text="'Waktu Rata-Rata: ' + (selectedServiceData?.average_time || '')"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true, offset: 40 });
+    </script>
+</body>
+</html>
