@@ -1,0 +1,172 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
+}
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+}
+
+model User {
+  id             String    @id @default(uuid())
+  name           String?   @default("User")
+  username       String    @unique
+  email          String    @unique
+  password       String
+  avatar         String?   @default("/img/default-avatar.png")
+  resetOtp       String?
+  resetOtpExpiry DateTime?
+  role           String    @default("user") // 'user', 'reseller', 'admin', 'owner'
+  balance        Float     @default(0)
+  apiKey         String?   @unique
+  marginReseller Float     @default(0)
+  lastActivity   DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  chats          Chat[]
+  orders         Order[]
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  type        String    // 'pterodactyl', 'script', 'premium_app', 'other'
+  description String    @default("")
+  icon        String    @default("fas fa-box")
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+model Node {
+  id         String    @id @default(uuid())
+  name       String    @unique
+  domain     String
+  location   String    @default("Indonesia")
+  apiKey     String
+  locationId Int
+  nodeId     Int?
+  eggId      Int
+  nestId     Int
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  products   Product[]
+}
+
+model Product {
+  id                  String    @id @default(uuid())
+  name                String
+  category            Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId          String
+  description         String?
+  price               Float
+  isActive            Boolean   @default(true)
+  image               String    @default("/img/default-product.png")
+  iconSVG             String    @default("")
+  
+  // ---- PTERODACTYL SPECIFIC FIELDS ----
+  pteroNode           Node?     @relation(fields: [pteroNodeId], references: [id], onDelete: SetNull)
+  pteroNodeId         String?
+  pteroLocationId     Int?
+  pteroEggId          Int?
+  pteroNestId         Int?
+  pteroMemory         Int?
+  pteroDisk           Int?
+  pteroCpu            Int?
+  pteroThreads        String?   @default("")
+  pteroSwap           Int?      @default(0)
+  pteroIo             Int?      @default(500)
+  pteroDatabases      Int?      @default(0)
+  pteroBackups        Int?      @default(0)
+  pteroAllocations    Int?      @default(1)
+  pteroEnv            Json?
+  
+  // ---- OTP SPECIFIC FIELDS ----
+  otpServiceId        String?
+  otpMargin           Float?
+  
+  // ---- SCRIPT/DIGITAL DOWNLOAD FIELDS ----
+  downloadUrl         String?
+  digitalInstructions String?
+  
+  // ---- PREMIUM APP / STOCK FIELDS ----
+  appPlatform         String    @default("Other")
+  stock               Int       @default(-1)
+  accounts            Json?     // Array of email, password, specialNotes, status
+  
+  // ---- SMM PANEL FIELDS ----
+  smmId               Int?
+  smmType             String?
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  orders              Order[]
+}
+
+model Order {
+  id               String    @id @default(uuid())
+  orderId          String    @unique
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId           String?
+  guestContact     String?
+  product          Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId        String
+  productNameSnap  String
+  amount           Float
+  discount         Float     @default(0)
+  voucherCode      String?
+  status           String    @default("pending") // 'pending', 'processing', 'completed', 'failed', 'cancelled'
+  paymentGateway   String?
+  paymentReference String?
+  paymentUrl       String?
+  data             Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Chat {
+  id           String    @id @default(uuid())
+  sessionId    String    @unique
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId       String?
+  guestInfo    Json?     // { name, email }
+  messages     Json      // [{ role, content, timestamp }]
+  status       String    @default("active") // 'active', 'waiting_admin', 'admin_joined', 'closed'
+  lastActivity DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Voucher {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  discountType    String    // 'percentage', 'fixed'
+  discountValue   Float
+  minPurchase     Float     @default(0)
+  maxUsage        Int       @default(-1)
+  usedCount       Int       @default(0)
+  expiryDate      DateTime?
+  applicableTypes Json      // ['panel', 'premium_app', 'source_code', 'script', 'all']
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
