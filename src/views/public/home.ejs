@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <style>
+        /* Base Resets & Hide Scrollbar */
+        .mobile-scroll::-webkit-scrollbar { display: none; }
+        .mobile-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Grid Background Pattern */
+        .bg-grid-pattern {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+        }
+        .dark .bg-grid-pattern {
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 15, 20, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Glowing Orbs */
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+            animation: pulse-glow 8s infinite alternate ease-in-out;
+        }
+        @keyframes pulse-glow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.4; }
+            100% { transform: scale(1.2) translate(20px, -20px); opacity: 0.7; }
+        }
+
+        /* Bento Grid Layouts */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .bento-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: minmax(180px, auto); }
+            .bento-large { grid-column: span 2; grid-row: span 2; }
+            .bento-wide { grid-column: span 2; grid-row: span 1; }
+            .bento-square { grid-column: span 1; grid-row: span 1; }
+        }
+
+        /* Text Gradients */
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Float animations */
+        @keyframes float-gentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float { animation: float-gentle 4s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-[#fafafa] dark:bg-[#05050A] text-slate-900 dark:text-white antialiased selection:bg-blue-500/30 overflow-x-hidden transition-colors duration-300">
+    <div id="toast-container" class="toast-container"></div>
+
+    <%- include('../partials/public-navbar') %>
+
+    <main class="relative z-10 flex flex-col min-h-screen">
+
+        <%# ═══════════════════════════════════════════════════
+            ULTRA-MODERN HERO SECTION
+        ════════════════════════════════════════════════════ %>
+        <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 flex items-center justify-center min-h-[90vh]">
+            
+            <!-- Animated Background Grid -->
+            <div class="absolute inset-0 bg-grid-pattern z-0 opacity-40 dark:opacity-100"></div>
+
+            <!-- Glowing Orbs -->
+            <div class="glow-orb bg-blue-500 w-[300px] h-[300px] top-10 left-[10%] mix-blend-screen dark:mix-blend-color-dodge"></div>
+            <div class="glow-orb bg-indigo-500 w-[400px] h-[400px] bottom-10 right-[10%] mix-blend-screen dark:mix-blend-color-dodge animation-delay-2000"></div>
+            <div class="glow-orb bg-purple-500 w-[200px] h-[200px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mix-blend-screen dark:mix-blend-color-dodge"></div>
+
+            <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+                
+                <!-- Pill Badge -->
+                <div data-aos="fade-down" class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel mb-8 shadow-lg shadow-blue-500/10 border border-blue-500/20">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                    </span>
+                    <span class="text-xs sm:text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 text-gradient uppercase tracking-widest">
+                        <%= t('home_hero_trust') %>
+                    </span>
+                </div>
+
+                <!-- Massive Headline -->
+                <h1 data-aos="zoom-in" data-aos-delay="100" class="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter leading-[1.05] mb-8">
+                    Automate Your Digital <br class="hidden sm:block" />
+                    <span class="text-gradient bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+                        Ecosystem.
+                    </span>
+                </h1>
+
+                <!-- Subtitle -->
+                <p data-aos="fade-up" data-aos-delay="200" class="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl font-medium leading-relaxed mb-10">
+                    <%= t('home_hero_subtitle') %>
+                </p>
+
+                <!-- CTA Buttons -->
+                <div data-aos="fade-up" data-aos-delay="300" class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                    <a href="/dashboard" class="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3">
+                        <%= t('home_hero_cta') %>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </a>
+                    <a href="/auth/register" class="w-full sm:w-auto px-8 py-4 glass-panel hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900 dark:text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center justify-center">
+                        Daftar Gratis
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <%# ═══════════════════════════════════════════════════
+            FLOATING STATS BAR
+        ════════════════════════════════════════════════════ %>
+        <section class="relative z-20 -mt-10 mb-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-6xl mx-auto glass-panel rounded-3xl p-6 sm:p-10 shadow-2xl shadow-black/5 dark:shadow-none" data-aos="fade-up" data-aos-delay="400">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 divide-x-0 md:divide-x divide-slate-200 dark:divide-white/10 text-center">
+                    <div class="stat-container">
+                        <p class="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-2" data-count="<%= stats.activeServers %>">0</p>
+                        <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest"><%= t('home_stats_active_servers') %></p>
+                    </div>
+                    <div class="stat-container">
+                        <p class="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-2" data-count="<%= stats.totalUsers %>">0</p>
+                        <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest"><%= t('home_stats_total_users') %></p>
+                    </div>
+                    <div class="stat-container">
+                        <p class="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-2" data-count="<%= stats.activeUsers %>">0</p>
+                        <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest"><%= t('home_stats_active_users') %></p>
+                    </div>
+                    <div class="stat-container">
+                        <p class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-emerald-500 mb-2">99.9%</p>
+                        <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest"><%= t('home_stats_uptime') %></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <%# ═══════════════════════════════════════════════════
+            BENTO BOX ECOSYSTEM
+        ════════════════════════════════════════════════════ %>
+        <section class="py-16 relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16" data-aos="fade-up">
+                    <h2 class="text-3xl sm:text-5xl font-black tracking-tight mb-4 text-slate-900 dark:text-white"><%= t('home_ecosystem_title') %></h2>
+                    <p class="text-slate-500 max-w-2xl mx-auto text-lg"><%= t('home_ecosystem_desc') %></p>
+                </div>
+
+                <div class="bento-grid">
+                    <!-- Pterodactyl Panel (Large) -->
+                    <div class="bento-large group relative overflow-hidden rounded-[2rem] glass-panel border border-blue-500/20 p-8 flex flex-col justify-between hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500" data-aos="fade-up" data-aos-delay="0">
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-500/40 transition-colors"></div>
+                        <div class="relative z-10">
+                            <div class="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg mb-6 group-hover:scale-110 transition-transform">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                            </div>
+                            <h3 class="text-3xl font-black text-slate-900 dark:text-white mb-4">Pterodactyl Cloud</h3>
+                            <p class="text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-sm"><%= t('home_ptero_desc') %></p>
+                        </div>
+                        <div class="mt-8 relative z-10 bg-white/50 dark:bg-black/30 rounded-2xl p-4 border border-slate-200 dark:border-white/5 animate-float">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-black uppercase text-slate-500">Node Status</span>
+                                <span class="flex items-center gap-2 text-xs font-black text-emerald-500"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online</span>
+                            </div>
+                            <div class="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div class="w-[85%] h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SMM Panel (Wide) -->
+                    <div class="bento-wide group relative overflow-hidden rounded-[2rem] glass-panel p-8 flex flex-col justify-between hover:-translate-y-2 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-500 border border-slate-200 dark:border-white/5" data-aos="fade-up" data-aos-delay="100">
+                        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/30 transition-colors"></div>
+                        <div class="relative z-10 flex items-start gap-6">
+                            <div class="w-14 h-14 shrink-0 bg-orange-500/10 text-orange-500 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2">SMM Automation</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium"><%= t('home_smm_desc') %></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nokos OTP (Square) -->
+                    <div class="bento-square group relative overflow-hidden rounded-[2rem] glass-panel p-8 flex flex-col justify-between hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500 border border-slate-200 dark:border-white/5" data-aos="fade-up" data-aos-delay="200">
+                        <div class="relative z-10">
+                            <div class="w-12 h-12 bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            </div>
+                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Nokos OTP</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium"><%= t('home_otp_desc') %></p>
+                        </div>
+                    </div>
+
+                    <!-- Scripts & Apps (Square) -->
+                    <div class="bento-square group relative overflow-hidden rounded-[2rem] glass-panel p-8 flex flex-col justify-between hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-500 border border-slate-200 dark:border-white/5" data-aos="fade-up" data-aos-delay="300">
+                        <div class="relative z-10">
+                            <div class="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            </div>
+                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">Digital Vault</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium"><%= t('home_app_desc') %></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <%# ═══════════════════════════════════════════════════
+            CTA BANNER
+        ════════════════════════════════════════════════════ %>
+        <section class="py-24 px-4 sm:px-6 lg:px-8">
+            <div data-aos="zoom-in" class="max-w-6xl mx-auto relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-[3rem] p-12 lg:p-20 text-center shadow-2xl shadow-blue-500/20">
+                <div class="absolute inset-0 bg-grid-pattern opacity-20"></div>
+                <div class="relative z-10">
+                    <h2 class="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-6 tracking-tight">Ready to Level Up?</h2>
+                    <p class="text-blue-100 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-medium">Join thousands of users enjoying seamless automation, instant provisioning, and 24/7 reliability.</p>
+                    <a href="/auth/register" class="inline-flex items-center justify-center px-10 py-5 bg-white text-blue-600 rounded-full font-black text-lg uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl">
+                        Create Free Account
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <%- include('../partials/public-footer') %>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 800, easing: 'ease-out-cubic', once: true, offset: 50 });
+
+
+        // Count Up Animation for Stats
+        document.addEventListener("DOMContentLoaded", () => {
+            const stats = document.querySelectorAll('[data-count]');
+            
+            const countUp = (el) => {
+                const target = +el.getAttribute('data-count');
+                const duration = 2000; // 2 seconds
+                const start = performance.now();
+                
+                const updateCounter = (currentTime) => {
+                    const elapsed = currentTime - start;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Ease out quart
+                    const easeProgress = 1 - Math.pow(1 - progress, 4);
+                    const currentCount = Math.floor(target * easeProgress);
+                    
+                    el.innerText = currentCount.toLocaleString('id-ID') + (progress === 1 ? '+' : '');
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(updateCounter);
+                    }
+                };
+                
+                requestAnimationFrame(updateCounter);
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        countUp(entry.target);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            stats.forEach(stat => observer.observe(stat));
+        });
+    </script>
+    <%- include('../partials/chat-widget') %>
+</body>
+</html>
